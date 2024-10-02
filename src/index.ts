@@ -9,60 +9,62 @@ const bot = new TelegramBot(token, { polling: true });
 
 console.log('Telegram bot started');
 
-// Handle '/addkey' command
-bot.onText(/\/addkey/, async (msg) => {
+// Main Menu with buttons
+bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  try {
-    const vpnKey = await createVpnKey();
-    bot.sendMessage(chatId, `New VPN key created: ${vpnKey}`);
-  } catch (error) {
-    bot.sendMessage(chatId, 'Error creating VPN key.');
-  }
+  bot.sendMessage(chatId, 'Choose an action:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: 'Create VPN Key', callback_data: 'create_key' }],
+        [{ text: 'List VPN Keys', callback_data: 'list_keys' }],
+        [{ text: 'Remove VPN Key', callback_data: 'remove_key' }],
+        [{ text: 'Get Key Info', callback_data: 'get_key_info' }]
+      ]
+    }
+  });
 });
 
-// Handle '/listkeys' command
-bot.onText(/\/listkeys/, async (msg) => {
-  const chatId = msg.chat.id;
+// Handle button presses
+bot.on('callback_query', async (callbackQuery) => {
+  const message = callbackQuery.message;
+  const chatId = message?.chat.id || 0;
+  const action = callbackQuery.data;
+
   try {
-    const keys = await listVpnKeys();
-    if (keys.length === 0) {
-      bot.sendMessage(chatId, 'No VPN keys available.');
-    } else {
-      bot.sendMessage(chatId, `VPN Keys:\n${keys.join('\n')}`);
+    if (action === 'create_key') {
+      const vpnKey = await createVpnKey();
+      bot.sendMessage(chatId, `New VPN key created: ${vpnKey}`);
+    } else if (action === 'list_keys') {
+      const keys = await listVpnKeys();
+      if (keys.length === 0) {
+        bot.sendMessage(chatId, 'No VPN keys available.');
+      } else {
+        bot.sendMessage(chatId, `VPN Keys:\n${keys.join('\n')}`);
+      }
+    } else if (action === 'remove_key') {
+      bot.sendMessage(chatId, 'Please send the ID of the key to remove.');
+      bot.once('message', async (msg) => {
+        const keyId = msg.text || '';
+        try {
+          await removeVpnKey(keyId);
+          bot.sendMessage(chatId, `VPN key ${keyId} removed.`);
+        } catch (error) {
+          bot.sendMessage(chatId, `Error removing VPN key ${keyId}.`);
+        }
+      });
+    } else if (action === 'get_key_info') {
+      bot.sendMessage(chatId, 'Please send the ID of the key to get info.');
+      bot.once('message', async (msg) => {
+        const keyId = msg.text || '';
+        try {
+          const keyInfo = await getKeyInfo(keyId);
+          bot.sendMessage(chatId, `VPN Key Info:\n${JSON.stringify(keyInfo, null, 2)}`);
+        } catch (error) {
+          bot.sendMessage(chatId, `Error fetching info for VPN key ${keyId}.`);
+        }
+      });
     }
   } catch (error) {
-    bot.sendMessage(chatId, 'Error listing VPN keys.');
-  }
-});
-
-// Handle '/removekey <keyId>' command
-bot.onText(/\/removekey (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const keyId = match?.[1];  // Extract the keyId from the command
-  if (!keyId) {
-    bot.sendMessage(chatId, 'Error: No keyId provided.');
-    return;
-  }
-  try {
-    await removeVpnKey(keyId);
-    bot.sendMessage(chatId, `VPN key ${keyId} removed.`);
-  } catch (error) {
-    bot.sendMessage(chatId, `Error removing VPN key ${keyId}.`);
-  }
-});
-
-// Handle '/keyinfo <keyId>' command
-bot.onText(/\/keyinfo (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const keyId = match?.[1];  // Extract the keyId from the command
-  if (!keyId) {
-    bot.sendMessage(chatId, 'Error: No keyId provided.');
-    return;
-  }
-  try {
-    const info = await getKeyInfo(keyId);
-    bot.sendMessage(chatId, `VPN Key Info:\n${JSON.stringify(info, null, 2)}`);
-  } catch (error) {
-    bot.sendMessage(chatId, `Error fetching info for VPN key ${keyId}.`);
+    bot.sendMessage(chatId, 'An error occurred. Please try again.');
   }
 });
