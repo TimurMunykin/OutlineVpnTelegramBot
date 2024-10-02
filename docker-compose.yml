@@ -1,0 +1,12 @@
+version: '3'
+services:
+  bot:
+    build: .
+    container_name: telegram_bot
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    command: npm start
