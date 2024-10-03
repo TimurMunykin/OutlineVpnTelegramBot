@@ -24,53 +24,86 @@ async function isUserInGroup(chatId: number, userId: number): Promise<boolean> {
   }
 }
 
+// Welcome message and menu
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+  const username = msg.from?.username || 'User';
+
+  bot.sendMessage(chatId, `👋 Welcome, ${username}!\nI’m here to help you manage your VPN keys.`, {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🔑 Get VPN Key', callback_data: 'get_key' }],
+        [{ text: '📊 Check Traffic', callback_data: 'check_traffic' }],
+      ],
+    },
+  });
+});
+
+// Main menu
+bot.onText(/\/menu/, (msg) => {
+  const chatId = msg.chat.id;
+
+  bot.sendMessage(chatId, '📋 Main Menu:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🔑 Get VPN Key', callback_data: 'get_key' }],
+        [{ text: '📊 Check Traffic', callback_data: 'check_traffic' }],
+        [{ text: '🛑 Remove Key', callback_data: 'remove_key' }]
+      ],
+    },
+  });
+});
+
+// Handle button clicks (callback queries)
+bot.on('callback_query', async (callbackQuery) => {
+  const chatId = callbackQuery.message?.chat.id || 0;
+  const userId = callbackQuery.from.id;
+  const username = callbackQuery.from.username || 'User';
+  const action = callbackQuery.data;  // Button's callback data
+
+  if (action === 'get_key') {
+    await assignVpnKey(userId, username, chatId);
+  } else if (action === 'check_traffic') {
+    const existingKeys = await listVpnKeys();
+    const userKey = existingKeys.find(key => key.name === `${username}_${userId}`);
+
+    if (userKey) {
+      const trafficUsage = await getTrafficUsageForKey(userKey.id);
+      bot.sendMessage(chatId, `📊 Your traffic usage: ${trafficUsage} GB`);
+    } else {
+      bot.sendMessage(chatId, 'You don’t have a VPN key yet.');
+    }
+  }
+});
+
 // Assign VPN key to a user and store their Telegram user ID in the key's name
 async function assignVpnKey(userId: number, username: string, chatId: number) {
   const vpnKeyId = `${username}_${userId}`;
   if (!await isUserInGroup(Number(ALLOWED_CHAT_ID), userId)) {
-    bot.sendMessage(chatId, 'You are not part of the allowed group.');
+    bot.sendMessage(chatId, '🚫 You are not part of the allowed group.');
     return;
   }
 
-  // Check if user already has a key by searching for their user ID in the VPN keys' names
   const existingKeys = await listVpnKeys();
   const existingKey = existingKeys.find(key => key.name === vpnKeyId);
 
   if (existingKey) {
-    bot.sendMessage(chatId, `You already have a key: ${existingKey.accessUrl}`);
+    bot.sendMessage(chatId, `🔑 You already have a key:`);
+    bot.sendMessage(chatId, `\`\`\`\n${existingKey.accessUrl}\n\`\`\``, { parse_mode: 'Markdown' });
     return;
   }
 
-  // Check if the total traffic limit has been reached
   if (totalTrafficUsed >= MAX_TRAFFIC_LIMIT) {
-    bot.sendMessage(chatId, 'The total traffic limit for this month has been reached.');
+    bot.sendMessage(chatId, '🚫 The total traffic limit for this month has been reached.');
     return;
   }
 
-  // Create a new VPN key with the user's Telegram ID as the name
   try {
-    const vpnKey = await createVpnKey(vpnKeyId);  // Use userId as the 'name'
-    bot.sendMessage(chatId, `Your VPN key: ${vpnKey}`);
+    const vpnKey = await createVpnKey(vpnKeyId);
+    bot.sendMessage(chatId, `✅ Your VPN key has been created:`);
+    bot.sendMessage(chatId, `\`\`\`\n${vpnKey}\n\`\`\``, { parse_mode: 'Markdown' });
   } catch (error) {
-    bot.sendMessage(chatId, 'Error creating VPN key.');
+    bot.sendMessage(chatId, '⚠️ Error creating VPN key.');
     console.error(error);
   }
 }
-
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from?.id || 0;
-  const username = msg.from?.username || 'Unknown';
-
-  if (msg.chat.type === 'private') {
-    // Ignore private messages if the user is not in the group
-    if (!await isUserInGroup(Number(ALLOWED_CHAT_ID), userId)) {
-      return;
-    }
-  }
-
-  // When a user asks for a key
-  if (msg.text?.toLowerCase() === '/getkey') {
-    await assignVpnKey(userId, username, chatId);
-  }
-});
