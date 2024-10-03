@@ -2,13 +2,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import TelegramBot from 'node-telegram-bot-api';
-import { createVpnKey, getTrafficUsageForKey, listVpnKeys } from './vpnManager';
+import { createVpnKey, getTrafficUsageForKey, listVpnKeys, removeVpnKey } from './vpnManager';
 
 const token = process.env.TELEGRAM_BOT_TOKEN || '';
 const bot = new TelegramBot(token, { polling: true });
 
 const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
 const MAX_TRAFFIC_LIMIT = 200;  // Total traffic limit (in GB)
+const ADMIN_USER_ID = Number(process.env.ADMIN_USER_ID) || 123456789;  // Replace with the actual admin ID
 let totalTrafficUsed = 0;  // Track traffic used by all users
 
 console.log('Telegram bot started');
@@ -24,25 +25,33 @@ async function isUserInGroup(chatId: number, userId: number): Promise<boolean> {
   }
 }
 
-// Welcome message and menu
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from?.id || 0;
   const username = msg.from?.username || 'User';
+
+  let buttons = [
+    [{ text: '🔑 Get VPN Key', callback_data: 'get_key' }],
+    [{ text: '📊 Check Traffic', callback_data: 'check_traffic' }],
+  ];
+
+  // If the user is the admin, show additional admin buttons
+  console.log(userId)
+  if (userId === ADMIN_USER_ID) {
+    buttons.push([{ text: '🔑 List All VPN Keys (Admin)', callback_data: 'list_all_keys' }]);
+  }
 
   bot.sendMessage(chatId, `👋 Welcome, ${username}!\nI’m here to help you manage your VPN keys.`, {
     reply_markup: {
-      inline_keyboard: [
-        [{ text: '🔑 Get VPN Key', callback_data: 'get_key' }],
-        [{ text: '📊 Check Traffic', callback_data: 'check_traffic' }],
-      ],
+      inline_keyboard: buttons,
     },
   });
 });
 
+
 // Main menu
 bot.onText(/\/menu/, (msg) => {
   const chatId = msg.chat.id;
-
   bot.sendMessage(chatId, '📋 Main Menu:', {
     reply_markup: {
       inline_keyboard: [
@@ -73,6 +82,22 @@ bot.on('callback_query', async (callbackQuery) => {
     } else {
       bot.sendMessage(chatId, 'You don’t have a VPN key yet.');
     }
+  } else if (action === 'list_all_keys' && userId === ADMIN_USER_ID) {
+    // Only the admin can trigger this action
+    const allKeys = await listVpnKeys();
+    const keyButtons = allKeys.map(key => {
+      return [{ text: `❌ Remove Key: ${key.name}`, callback_data: `remove_key_${key.id}` }];
+    });
+
+    bot.sendMessage(chatId, '🔑 List of all VPN keys:', {
+      reply_markup: {
+        inline_keyboard: keyButtons,
+      },
+    });
+  } else if (action !== undefined && action.startsWith('remove_key_') && userId === ADMIN_USER_ID) {
+    const keyId = action.replace('remove_key_', '');
+    await removeVpnKey(keyId);
+    bot.sendMessage(chatId, `✅ VPN key ${keyId} has been removed.`);
   }
 });
 

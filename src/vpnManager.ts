@@ -44,3 +44,13 @@ export async function getTrafficUsageForKey(keyId: string): Promise<number> {
     throw new Error('Could not fetch traffic usage.');
   }
 }
+
+export async function removeVpnKey(keyId: string): Promise<void> {
+  try {
+    await outlineVpn.deleteUser(keyId);  // Use the Outline API to delete the key
+    console.log(`Key with ID ${keyId} has been removed.`);
+  } catch (error) {
+    console.error(`Error removing key ${keyId}:`, error);
+    throw new Error(`Could not remove VPN key ${keyId}.`);
+  }
+}
