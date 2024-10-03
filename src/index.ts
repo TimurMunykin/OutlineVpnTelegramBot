@@ -2,69 +2,75 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import TelegramBot from 'node-telegram-bot-api';
-import { createVpnKey, listVpnKeys, removeVpnKey, getKeyInfo } from './vpnManager';
+import { createVpnKey, getTrafficUsageForKey, listVpnKeys } from './vpnManager';
 
 const token = process.env.TELEGRAM_BOT_TOKEN || '';
 const bot = new TelegramBot(token, { polling: true });
 
+const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
+const MAX_TRAFFIC_LIMIT = 200;  // Total traffic limit (in GB)
+let totalTrafficUsed = 0;  // Track traffic used by all users
+
 console.log('Telegram bot started');
 
-// Main Menu with buttons
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Choose an action:', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: 'Create VPN Key', callback_data: 'create_key' }],
-        [{ text: 'List VPN Keys', callback_data: 'list_keys' }],
-        [{ text: 'Remove VPN Key', callback_data: 'remove_key' }],
-        [{ text: 'Get Key Info', callback_data: 'get_key_info' }]
-      ]
-    }
-  });
-});
-
-// Handle button presses
-bot.on('callback_query', async (callbackQuery) => {
-  const message = callbackQuery.message;
-  const chatId = message?.chat.id || 0;
-  const action = callbackQuery.data;
-
+// Check if the user is in the allowed group
+async function isUserInGroup(chatId: number, userId: number): Promise<boolean> {
   try {
-    if (action === 'create_key') {
-      const vpnKey = await createVpnKey();
-      bot.sendMessage(chatId, `New VPN key created: ${vpnKey}`);
-    } else if (action === 'list_keys') {
-      const keys = await listVpnKeys();
-      if (keys.length === 0) {
-        bot.sendMessage(chatId, 'No VPN keys available.');
-      } else {
-        bot.sendMessage(chatId, `VPN Keys:\n${keys.join('\n')}`);
-      }
-    } else if (action === 'remove_key') {
-      bot.sendMessage(chatId, 'Please send the ID of the key to remove.');
-      bot.once('message', async (msg) => {
-        const keyId = msg.text || '';
-        try {
-          await removeVpnKey(keyId);
-          bot.sendMessage(chatId, `VPN key ${keyId} removed.`);
-        } catch (error) {
-          bot.sendMessage(chatId, `Error removing VPN key ${keyId}.`);
-        }
-      });
-    } else if (action === 'get_key_info') {
-      bot.sendMessage(chatId, 'Please send the ID of the key to get info.');
-      bot.once('message', async (msg) => {
-        const keyId = msg.text || '';
-        try {
-          const keyInfo = await getKeyInfo(keyId);
-          bot.sendMessage(chatId, `VPN Key Info:\n${JSON.stringify(keyInfo, null, 2)}`);
-        } catch (error) {
-          bot.sendMessage(chatId, `Error fetching info for VPN key ${keyId}.`);
-        }
-      });
-    }
+    const chatMember = await bot.getChatMember(chatId, userId);
+    return chatMember.status !== 'left' && chatMember.status !== 'kicked';
   } catch (error) {
-    bot.sendMessage(chatId, 'An error occurred. Please try again.');
+    console.error('Error checking chat membership:', error);
+    return false;
+  }
+}
+
+// Assign VPN key to a user and store their Telegram user ID in the key's name
+async function assignVpnKey(userId: number, username: string, chatId: number) {
+  const vpnKeyId = `${username}_${userId}`;
+  if (!await isUserInGroup(Number(ALLOWED_CHAT_ID), userId)) {
+    bot.sendMessage(chatId, 'You are not part of the allowed group.');
+    return;
+  }
+
+  // Check if user already has a key by searching for their user ID in the VPN keys' names
+  const existingKeys = await listVpnKeys();
+  const existingKey = existingKeys.find(key => key.name === vpnKeyId);
+
+  if (existingKey) {
+    bot.sendMessage(chatId, `You already have a key: ${existingKey.accessUrl}`);
+    return;
+  }
+
+  // Check if the total traffic limit has been reached
+  if (totalTrafficUsed >= MAX_TRAFFIC_LIMIT) {
+    bot.sendMessage(chatId, 'The total traffic limit for this month has been reached.');
+    return;
+  }
+
+  // Create a new VPN key with the user's Telegram ID as the name
+  try {
+    const vpnKey = await createVpnKey(vpnKeyId);  // Use userId as the 'name'
+    bot.sendMessage(chatId, `Your VPN key: ${vpnKey}`);
+  } catch (error) {
+    bot.sendMessage(chatId, 'Error creating VPN key.');
+    console.error(error);
+  }
+}
+
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id || 0;
+  const username = msg.from?.username || 'Unknown';
+
+  if (msg.chat.type === 'private') {
+    // Ignore private messages if the user is not in the group
+    if (!await isUserInGroup(Number(ALLOWED_CHAT_ID), userId)) {
+      return;
+    }
+  }
+
+  // When a user asks for a key
+  if (msg.text?.toLowerCase() === '/getkey') {
+    await assignVpnKey(userId, username, chatId);
   }
 });
