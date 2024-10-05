@@ -15,6 +15,12 @@ const outlineVpn = new OutlineVPN({
   fingerprint: fingerprint,
 });
 
+const token = process.env.TELEGRAM_BOT_TOKEN || "";
+const bot = new TelegramBot(token, { polling: true });
+const MAX_TRAFFIC_LIMIT = 10; // Total traffic limit (in GB)
+const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
+const ADMIN_USER_ID = Number(process.env.ADMIN_USER_ID) || 123456789; // Replace with the actual admin ID
+
 // Create a new VPN key and store the Telegram user ID in the 'name' property
 export async function createVpnKey(userId: string): Promise<string> {
   try {
@@ -30,6 +36,12 @@ export async function createVpnKey(userId: string): Promise<string> {
 // List all VPN keys and retrieve their 'name' properties
 export async function listVpnKeys(): Promise<User[]> {
   try {
+    const limitSet = await outlineVpn.setDefaultDataLimit(convertGigabytesToBytes(MAX_TRAFFIC_LIMIT));
+    if (limitSet) {
+      console.log(`Data limit set to ${MAX_TRAFFIC_LIMIT} GB.`);
+    } else {
+      console.log("Data limit not set.");
+    }
     return await outlineVpn.getUsers();
   } catch (error) {
     console.error("Error listing VPN keys:", error);
@@ -41,17 +53,26 @@ export async function listVpnKeys(): Promise<User[]> {
 export async function getTrafficUsageForKey(keyId: string): Promise<number> {
   try {
     const { bytesTransferredByUserId } = await outlineVpn.getDataUsage();
+    console.log('bytesTransferredByUserId', bytesTransferredByUserId)
     const usage = bytesTransferredByUserId[keyId];
     console.log(usage)
     if (usage === undefined) {
       console.log('opaan')
       return 0;
     }
-    return usage / (1024 * 1024 * 1024); // Convert from bytes to GB
+    return convertBytesToGigabytes(usage); // Convert from bytes to GB
   } catch (error) {
     console.error("Error fetching traffic usage:", error);
     throw new Error("Could not fetch traffic usage.");
   }
+}
+
+function convertBytesToGigabytes(usage: number): number {
+  return usage / (1024 * 1024 * 1024);
+}
+
+function convertGigabytesToBytes(gigabytes: number): number {
+  return gigabytes * 1024 * 1024 * 1024;
 }
 
 export async function removeVpnKey(keyId: string): Promise<void> {
@@ -63,12 +84,6 @@ export async function removeVpnKey(keyId: string): Promise<void> {
     throw new Error(`Could not remove VPN key ${keyId}.`);
   }
 }
-
-const token = process.env.TELEGRAM_BOT_TOKEN || "";
-const bot = new TelegramBot(token, { polling: true });
-
-const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
-const ADMIN_USER_ID = Number(process.env.ADMIN_USER_ID) || 123456789; // Replace with the actual admin ID
 
 console.log("Telegram bot started");
 
@@ -144,7 +159,7 @@ bot.on("message", async (msg) => {
       const trafficUsage = await getTrafficUsageForKey(userKey.id);
       bot.sendMessage(
         chatId,
-        `📊 Your traffic usage: ${trafficUsage.toFixed(2)} GB`
+        `📊 Your traffic usage: ${trafficUsage.toFixed(2)}/${MAX_TRAFFIC_LIMIT.toFixed(2)} GB`
       );
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
