@@ -60,13 +60,17 @@ function showMainMenu(chatId: number, userId: number, username: string) {
     buttons.push([{ text: "🔑 List All VPN Keys (Admin)" }]);
   }
 
-  bot.sendMessage(chatId, "Main Menu:", {
-    reply_markup: {
-      keyboard: buttons,
-      resize_keyboard: true, // Resize the keyboard to fit the user's screen
-      one_time_keyboard: false, // Make the keyboard persistent
-    },
-  });
+  bot.sendMessage(
+    chatId,
+    "👋 Welcome to the VPN Bot! 🌐 Get ready to unlock the internet securely! Choose an option below to get started: 🔽",
+    {
+      reply_markup: {
+        keyboard: buttons,
+        resize_keyboard: true, // Resize the keyboard to fit the user's screen
+        one_time_keyboard: false, // Make the keyboard persistent
+      },
+    }
+  );
 }
 
 // Handle button clicks (messages)
