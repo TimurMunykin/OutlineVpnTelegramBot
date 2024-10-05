@@ -1,22 +1,74 @@
 //index.ts
 import dotenv from "dotenv";
+import TelegramBot from "node-telegram-bot-api";
+import { OutlineVPN } from "outlinevpn-api";
+import { User } from "outlinevpn-api/dist/types";
+
 dotenv.config();
 
-import TelegramBot from "node-telegram-bot-api";
-import {
-  createVpnKey,
-  getTrafficUsageForKey,
-  listVpnKeys,
-  removeVpnKey,
-} from "./vpnManager";
+const apiUrl =
+  process.env.OUTLINE_API_URL || "https://your-default-api-url.com";
+const fingerprint = process.env.OUTLINE_API_FINGERPRINT || "your-fingerprint";
+
+const outlineVpn = new OutlineVPN({
+  apiUrl: apiUrl,
+  fingerprint: fingerprint,
+});
+
+// Create a new VPN key and store the Telegram user ID in the 'name' property
+export async function createVpnKey(userId: string): Promise<string> {
+  try {
+    const key = await outlineVpn.createUser();
+    await outlineVpn.renameUser(key.id, userId);
+    return key.accessUrl;
+  } catch (error) {
+    console.error("Error creating VPN key:", error);
+    throw new Error("Could not create VPN key.");
+  }
+}
+
+// List all VPN keys and retrieve their 'name' properties
+export async function listVpnKeys(): Promise<User[]> {
+  try {
+    return await outlineVpn.getUsers();
+  } catch (error) {
+    console.error("Error listing VPN keys:", error);
+    throw new Error("Could not list VPN keys.");
+  }
+}
+
+// Get traffic usage for a specific key
+export async function getTrafficUsageForKey(keyId: string): Promise<number> {
+  try {
+    const { bytesTransferredByUserId } = await outlineVpn.getDataUsage();
+    const usage = bytesTransferredByUserId[keyId];
+    console.log(usage)
+    if (usage === undefined) {
+      console.log('opaan')
+      return 0;
+    }
+    return usage / (1024 * 1024 * 1024); // Convert from bytes to GB
+  } catch (error) {
+    console.error("Error fetching traffic usage:", error);
+    throw new Error("Could not fetch traffic usage.");
+  }
+}
+
+export async function removeVpnKey(keyId: string): Promise<void> {
+  try {
+    await outlineVpn.deleteUser(keyId); // Use the Outline API to delete the key
+    console.log(`Key with ID ${keyId} has been removed.`);
+  } catch (error) {
+    console.error(`Error removing key ${keyId}:`, error);
+    throw new Error(`Could not remove VPN key ${keyId}.`);
+  }
+}
 
 const token = process.env.TELEGRAM_BOT_TOKEN || "";
 const bot = new TelegramBot(token, { polling: true });
 
 const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
-const MAX_TRAFFIC_LIMIT = 200; // Total traffic limit (in GB)
 const ADMIN_USER_ID = Number(process.env.ADMIN_USER_ID) || 123456789; // Replace with the actual admin ID
-let totalTrafficUsed = 0; // Track traffic used by all users
 
 console.log("Telegram bot started");
 
@@ -90,7 +142,10 @@ bot.on("message", async (msg) => {
 
     if (userKey) {
       const trafficUsage = await getTrafficUsageForKey(userKey.id);
-      bot.sendMessage(chatId, `📊 Your traffic usage: ${trafficUsage} GB`);
+      bot.sendMessage(
+        chatId,
+        `📊 Your traffic usage: ${trafficUsage.toFixed(2)} GB`
+      );
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
@@ -165,14 +220,6 @@ ${existingKey.accessUrl}
 \`\`\`
 Please, copy this access key.`,
       { parse_mode: "Markdown" }
-    );
-    return;
-  }
-
-  if (totalTrafficUsed >= MAX_TRAFFIC_LIMIT) {
-    bot.sendMessage(
-      chatId,
-      "🚫 The total traffic limit for this month has been reached."
     );
     return;
   }
