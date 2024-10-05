@@ -1,0 +1,39 @@
+{
+  "buttons": {
+    "get_vpn_key": "🔑 Get VPN Key",
+    "check_traffic": "📊 Check Traffic",
+    "how_to_use_key": "ℹ️ How to use key",
+    "change_language": "🌐 Change Language",
+    "list_all_keys_admin": "🔑 List All VPN Keys (Admin)"
+  },
+  "messages": {
+    "welcome": "👋 Welcome, {username}! Choose an option below:",
+    "choose_language": "Please choose your language:",
+    "language_set": "Language set to {language}.",
+    "traffic_usage": "📊 Your traffic usage: {usage}/{limit} GB",
+    "no_vpn_key": "You don’t have a VPN key yet.",
+    "already_have_key": "🔑 You already have a key:\n```\n{accessUrl}\n```",
+    "vpn_key_created": "✅ Your VPN key has been created:\n```\n{vpnKey}\n```",
+    "error_creating_key": "⚠️ Error creating VPN key.",
+    "key_removed": "✅ VPN key {keyId} has been removed.",
+    "not_in_allowed_group": "🚫 You are not part of the allowed group.",
+    "how_to_use_key": "Use this server to safely access the open internet:\n\n{accessUrl}"
+  },
+  "logs": {
+    "bot_started": "Telegram bot started.",
+    "data_limit_set": "Data limit set to {limit} GB.",
+    "data_limit_not_set": "Data limit not set.",
+    "key_removed": "Key with ID {keyId} has been removed."
+  },
+  "errors": {
+    "create_vpn_key": "Could not create VPN key.",
+    "list_vpn_keys": "Could not list VPN keys.",
+    "fetch_traffic_usage": "Could not fetch traffic usage.",
+    "remove_key": "Could not remove VPN key {keyId}.",
+    "check_chat_membership": "Error checking chat membership."
+  },
+  "defaults": {
+    "user": "User",
+    "admin": "Admin"
+  }
+}

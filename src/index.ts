@@ -3,8 +3,21 @@ import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
 import { OutlineVPN } from "outlinevpn-api";
 import { User } from "outlinevpn-api/dist/types";
+import i18n from "i18n";
 
 dotenv.config();
+
+// Configure i18n for localization
+i18n.configure({
+  locales: ["en", "ru"],
+  directory: __dirname + "/locales",
+  defaultLocale: "en",
+  objectNotation: true,
+  updateFiles: false,
+  register: global,
+});
+
+const userLocales: { [key: number]: string } = {};
 
 const apiUrl =
   process.env.OUTLINE_API_URL || "https://your-default-api-url.com";
