@@ -60,7 +60,7 @@ function showMainMenu(chatId: number, userId: number, username: string) {
     buttons.push([{ text: "🔑 List All VPN Keys (Admin)" }]);
   }
 
-  bot.sendMessage(chatId, `📋 Main Menu:`, {
+  bot.sendMessage(chatId, "Main Menu:", {
     reply_markup: {
       keyboard: buttons,
       resize_keyboard: true, // Resize the keyboard to fit the user's screen
@@ -78,7 +78,6 @@ bot.on("message", async (msg) => {
 
   if (text === "🔑 Get VPN Key") {
     await assignVpnKey(userId, username, chatId);
-    showMainMenu(chatId, userId, username);
   } else if (text === "📊 Check Traffic") {
     const existingKeys = await listVpnKeys();
     const userKey = existingKeys.find(
@@ -91,7 +90,6 @@ bot.on("message", async (msg) => {
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
-    showMainMenu(chatId, userId, username);
   } else if (
     text === "🔑 List All VPN Keys (Admin)" &&
     userId === ADMIN_USER_ID
@@ -139,7 +137,6 @@ You're ready to use the open internet! To make sure you successfully connected t
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
-    showMainMenu(chatId, userId, username);
   }
 });
 
@@ -192,8 +189,6 @@ Please, copy this access key.`,
     bot.sendMessage(chatId, "⚠️ Error creating VPN key.");
     console.error(error);
   }
-
-  showMainMenu(chatId, userId, username);
 }
 
 // Handle callback queries (e.g., remove keys)
