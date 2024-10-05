@@ -50,36 +50,36 @@ bot.onText(/\/menu/, (msg) => {
 
 function showMainMenu(chatId: number, userId: number, username: string) {
   let buttons = [
-    [{ text: "🔑 Get VPN Key", callback_data: "get_key" }],
-    [{ text: "📊 Check Traffic", callback_data: "check_traffic" }],
-    [{ text: "ℹ️ How to use key", callback_data: "info" }],
+    [{ text: "🔑 Get VPN Key" }],
+    [{ text: "📊 Check Traffic" }],
+    [{ text: "ℹ️ How to use key" }],
   ];
 
   // If the user is the admin, show additional admin buttons
   if (userId === ADMIN_USER_ID) {
-    buttons.push([
-      { text: "🔑 List All VPN Keys (Admin)", callback_data: "list_all_keys" },
-    ]);
+    buttons.push([{ text: "🔑 List All VPN Keys (Admin)" }]);
   }
 
   bot.sendMessage(chatId, `📋 Main Menu:`, {
     reply_markup: {
-      inline_keyboard: buttons,
+      keyboard: buttons,
+      resize_keyboard: true, // Resize the keyboard to fit the user's screen
+      one_time_keyboard: false, // Make the keyboard persistent
     },
   });
 }
 
-// Handle button clicks (callback queries)
-bot.on("callback_query", async (callbackQuery) => {
-  const chatId = callbackQuery.message?.chat.id || 0;
-  const userId = callbackQuery.from.id;
-  const username = callbackQuery.from.username || "User";
-  const action = callbackQuery.data; // Button's callback data
+// Handle button clicks (messages)
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id || 0;
+  const username = msg.from?.username || "User";
+  const text = msg.text;
 
-  if (action === "get_key") {
+  if (text === "🔑 Get VPN Key") {
     await assignVpnKey(userId, username, chatId);
     showMainMenu(chatId, userId, username);
-  } else if (action === "check_traffic") {
+  } else if (text === "📊 Check Traffic") {
     const existingKeys = await listVpnKeys();
     const userKey = existingKeys.find(
       (key) => key.name === `${username}_${userId}`
@@ -92,33 +92,22 @@ bot.on("callback_query", async (callbackQuery) => {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
     showMainMenu(chatId, userId, username);
-  } else if (action === "list_all_keys" && userId === ADMIN_USER_ID) {
-    // Only the admin can trigger this action
-    const allKeys = await listVpnKeys();
-    const keyButtons = allKeys.map((key) => {
-      return [
-        {
-          text: `❌ Remove Key: ${key.name}`,
-          callback_data: `remove_key_${key.id}`,
-        },
-      ];
-    });
-
-    bot.sendMessage(chatId, "🔑 List of all VPN keys:", {
-      reply_markup: {
-        inline_keyboard: keyButtons,
-      },
-    });
   } else if (
-    action !== undefined &&
-    action.startsWith("remove_key_") &&
+    text === "🔑 List All VPN Keys (Admin)" &&
     userId === ADMIN_USER_ID
   ) {
-    const keyId = action.replace("remove_key_", "");
-    await removeVpnKey(keyId);
-    bot.sendMessage(chatId, `✅ VPN key ${keyId} has been removed.`);
-    showMainMenu(chatId, userId, username);
-  } else if (action === "info") {
+    const allKeys = await listVpnKeys();
+    bot.sendMessage(chatId, "🔑 List of all VPN keys:", {
+      reply_markup: {
+        inline_keyboard: allKeys.map((key) => [
+          {
+            text: `❌ Remove Key: ${key.name}`,
+            callback_data: `remove_key_${key.id}`,
+          },
+        ]),
+      },
+    });
+  } else if (text === "ℹ️ How to use key") {
     const existingKeys = await listVpnKeys();
     const userKey = existingKeys.find(
       (key) => key.name === `${username}_${userId}`
@@ -206,3 +195,17 @@ Please, copy this access key.`,
 
   showMainMenu(chatId, userId, username);
 }
+
+// Handle callback queries (e.g., remove keys)
+bot.on("callback_query", async (callbackQuery) => {
+  const action = callbackQuery.data;
+  const chatId = callbackQuery.message?.chat.id || 0;
+  const userId = callbackQuery.from.id;
+
+  if (action?.startsWith("remove_key_") && userId === ADMIN_USER_ID) {
+    const keyId = action.replace("remove_key_", "");
+    await removeVpnKey(keyId);
+    bot.sendMessage(chatId, `✅ VPN key ${keyId} has been removed.`);
+    showMainMenu(chatId, userId, callbackQuery.from.username || "Admin");
+  }
+});
