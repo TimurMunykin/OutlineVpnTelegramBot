@@ -36,9 +36,23 @@ bot.onText(/\/start/, (msg) => {
   const userId = msg.from?.id || 0;
   const username = msg.from?.username || "User";
 
+  showMainMenu(chatId, userId, username);
+});
+
+// Main menu
+bot.onText(/\/menu/, (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from?.id || 0;
+  const username = msg.from?.username || "User";
+
+  showMainMenu(chatId, userId, username);
+});
+
+function showMainMenu(chatId: number, userId: number, username: string) {
   let buttons = [
     [{ text: "🔑 Get VPN Key", callback_data: "get_key" }],
     [{ text: "📊 Check Traffic", callback_data: "check_traffic" }],
+    [{ text: "ℹ️ How to use key", callback_data: "info" }],
   ];
 
   // If the user is the admin, show additional admin buttons
@@ -48,31 +62,12 @@ bot.onText(/\/start/, (msg) => {
     ]);
   }
 
-  bot.sendMessage(
-    chatId,
-    `👋 Welcome, ${username}!
-I’m here to help you manage your VPN keys.`,
-    {
-      reply_markup: {
-        inline_keyboard: buttons,
-      },
-    }
-  );
-});
-
-// Main menu
-bot.onText(/\/menu/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "📋 Main Menu:", {
+  bot.sendMessage(chatId, `📋 Main Menu:`, {
     reply_markup: {
-      inline_keyboard: [
-        [{ text: "🔑 Get VPN Key", callback_data: "get_key" }],
-        [{ text: "📊 Check Traffic", callback_data: "check_traffic" }],
-        [{ text: "🛑 Remove Key", callback_data: "remove_key" }],
-      ],
+      inline_keyboard: buttons,
     },
   });
-});
+}
 
 // Handle button clicks (callback queries)
 bot.on("callback_query", async (callbackQuery) => {
@@ -83,6 +78,7 @@ bot.on("callback_query", async (callbackQuery) => {
 
   if (action === "get_key") {
     await assignVpnKey(userId, username, chatId);
+    showMainMenu(chatId, userId, username);
   } else if (action === "check_traffic") {
     const existingKeys = await listVpnKeys();
     const userKey = existingKeys.find(
@@ -95,6 +91,7 @@ bot.on("callback_query", async (callbackQuery) => {
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
+    showMainMenu(chatId, userId, username);
   } else if (action === "list_all_keys" && userId === ADMIN_USER_ID) {
     // Only the admin can trigger this action
     const allKeys = await listVpnKeys();
@@ -120,6 +117,7 @@ bot.on("callback_query", async (callbackQuery) => {
     const keyId = action.replace("remove_key_", "");
     await removeVpnKey(keyId);
     bot.sendMessage(chatId, `✅ VPN key ${keyId} has been removed.`);
+    showMainMenu(chatId, userId, username);
   } else if (action === "info") {
     const existingKeys = await listVpnKeys();
     const userKey = existingKeys.find(
@@ -152,6 +150,7 @@ You're ready to use the open internet! To make sure you successfully connected t
     } else {
       bot.sendMessage(chatId, "You don’t have a VPN key yet.");
     }
+    showMainMenu(chatId, userId, username);
   }
 });
 
@@ -171,26 +170,10 @@ async function assignVpnKey(userId: number, username: string, chatId: number) {
       chatId,
       `🔑 You already have a key:
 
-Use this server to safely access the open internet:
-
-1) Download and install the Outline app for your device:
-
-- iOS: https://itunes.apple.com/app/outline-app/id1356177741
-- MacOS: https://itunes.apple.com/app/outline-app/id1356178125
-- Windows: https://s3.amazonaws.com/outline-releases/client/windows/stable/Outline-Client.exe
-- Linux: https://s3.amazonaws.com/outline-releases/client/linux/stable/Outline-Client.AppImage
-- Android: https://play.google.com/store/apps/details?id=org.outline.android.client
-- Android alternative link: https://s3.amazonaws.com/outline-releases/client/android/stable/Outline-Client.apk
-
-2) Here is your access key:
 \`\`\`
 ${existingKey.accessUrl}
 \`\`\`
-Please, copy this access key.
-
-3) Open the Outline client app. If your access key is auto-detected, tap "Connect" and proceed. If your access key is not auto-detected, then paste it in the field, then tap "Connect" and proceed.
-
-You're ready to use the open internet! To make sure you successfully connected to the server, try searching for "what is my ip" on Google Search. The IP address shown in Google should match the IP address in the Outline client.`,
+Please, copy this access key.`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -210,41 +193,16 @@ You're ready to use the open internet! To make sure you successfully connected t
       chatId,
       `✅ Your VPN key has been created:
 
-Use this server to safely access the open internet:
-
-1) Download and install the Outline app for your device:
-
-- iOS: https://itunes.apple.com/app/outline-app/id1356177741
-- MacOS: https://itunes.apple.com/app/outline-app/id1356178125
-- Windows: https://s3.amazonaws.com/outline-releases/client/windows/stable/Outline-Client.exe
-- Linux: https://s3.amazonaws.com/outline-releases/client/linux/stable/Outline-Client.AppImage
-- Android: https://play.google.com/store/apps/details?id=org.outline.android.client
-- Android alternative link: https://s3.amazonaws.com/outline-releases/client/android/stable/Outline-Client.apk
-
-2) Here is your access key:
 \`\`\`
 ${vpnKey}
 \`\`\`
-Please, copy this access key.
-
-3) Open the Outline client app. If your access key is auto-detected, tap "Connect" and proceed. If your access key is not auto-detected, then paste it in the field, then tap "Connect" and proceed.
-
-You're ready to use the open internet! To make sure you successfully connected to the server, try searching for "what is my ip" on Google Search. The IP address shown in Google should match the IP address in the Outline client.`,
+Please, copy this access key.`,
       { parse_mode: "Markdown" }
-    );
-
-    // Add an info button for users who have a key
-    bot.sendMessage(
-      chatId,
-      "For more information about using your VPN key, click the button below:",
-      {
-        reply_markup: {
-          inline_keyboard: [[{ text: "ℹ️ Info", callback_data: "info" }]],
-        },
-      }
     );
   } catch (error) {
     bot.sendMessage(chatId, "⚠️ Error creating VPN key.");
     console.error(error);
   }
+
+  showMainMenu(chatId, userId, username);
 }
