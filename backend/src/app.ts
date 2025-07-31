@@ -6,12 +6,12 @@ import dotenv from 'dotenv';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
-import { errorHandler } from '@/middleware/errorHandler';
-import { notFound } from '@/middleware/notFound';
-import authRoutes from '@/routes/auth';
-import userRoutes from '@/routes/users';
-import vpnRoutes from '@/routes/vpn';
-import oauthRoutes from '@/routes/oauth';
+import { errorHandler } from './middleware/errorHandler';
+import { notFound } from './middleware/notFound';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import vpnRoutes from './routes/vpn';
+import oauthRoutes from './routes/oauth';
 
 dotenv.config();
 

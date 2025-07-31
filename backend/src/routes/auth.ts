@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { AuthController } from '../controllers/AuthController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
@@ -33,9 +35,7 @@ const router = Router();
  *       400:
  *         description: Invalid input or user already exists
  */
-router.post('/register', (req, res) => {
-  res.json({ message: 'Register endpoint - TODO' });
-});
+router.post('/register', AuthController.register);
 
 /**
  * @swagger
@@ -64,9 +64,7 @@ router.post('/register', (req, res) => {
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', (req, res) => {
-  res.json({ message: 'Login endpoint - TODO' });
-});
+router.post('/login', AuthController.login);
 
 /**
  * @swagger
@@ -78,9 +76,7 @@ router.post('/login', (req, res) => {
  *       200:
  *         description: Token refreshed successfully
  */
-router.post('/refresh', (req, res) => {
-  res.json({ message: 'Refresh endpoint - TODO' });
-});
+router.post('/refresh', AuthController.refresh);
 
 /**
  * @swagger
@@ -94,9 +90,7 @@ router.post('/refresh', (req, res) => {
  *       200:
  *         description: Logout successful
  */
-router.post('/logout', (req, res) => {
-  res.json({ message: 'Logout endpoint - TODO' });
-});
+router.post('/logout', authenticateToken, AuthController.logout);
 
 /**
  * @swagger
@@ -110,8 +104,6 @@ router.post('/logout', (req, res) => {
  *       200:
  *         description: User info retrieved successfully
  */
-router.get('/me', (req, res) => {
-  res.json({ message: 'Me endpoint - TODO' });
-});
+router.get('/me', authenticateToken, AuthController.me);
 
 export default router;

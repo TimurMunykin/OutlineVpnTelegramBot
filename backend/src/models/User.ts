@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt'
-import { prisma } from '@/utils/prisma'
-import { createError } from '@/middleware/errorHandler'
+import { prisma } from '../utils/prisma'
 import { User, UserRole } from '@prisma/client'
 
 export interface ICreateUser {
@@ -8,20 +7,14 @@ export interface ICreateUser {
   name: string
   password: string
   role?: UserRole
+  isEmailVerified?: boolean
 }
 
 export class UserModel {
-  static async create(userData: ICreateUser): Promise<User> {
-    const { email, name, password, role = UserRole.USER } = userData
-    
-    // Check if user already exists
-    const existingUser = await this.findByEmail(email)
-    if (existingUser) {
-      throw createError('User with this email already exists', 400)
-    }
+  static async create(userData: ICreateUser): Promise<User & { password: string }> {
+    const { email, name, password, role = UserRole.USER, isEmailVerified = false } = userData
 
-    // Hash password
-    const saltRounds = 12
+    const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
 
     const user = await prisma.user.create({
@@ -30,10 +23,11 @@ export class UserModel {
         name,
         passwordHash,
         role,
+        isEmailVerified,
       },
     })
 
-    return user
+    return { ...user, password: passwordHash }
   }
 
   static async findById(id: number): Promise<User | null> {
@@ -48,10 +42,14 @@ export class UserModel {
     })
   }
 
-  static async findByEmailWithPassword(email: string): Promise<User | null> {
-    return prisma.user.findUnique({
+  static async findByEmailWithPassword(email: string): Promise<(User & { password: string }) | null> {
+    const user = await prisma.user.findUnique({
       where: { email },
     })
+    
+    if (!user) return null
+    
+    return { ...user, password: user.passwordHash }
   }
 
   static async verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -102,7 +100,7 @@ export class UserModel {
     })
 
     if (!user) {
-      throw createError('User not found', 404)
+      throw new Error('User not found')
     }
 
     return user
@@ -115,7 +113,7 @@ export class UserModel {
       })
     } catch (error: any) {
       if (error.code === 'P2025') {
-        throw createError('User not found', 404)
+        throw new Error('User not found')
       }
       throw error
     }
@@ -147,6 +145,39 @@ export class UserModel {
           },
         },
       },
+    })
+  }
+
+  static async saveRefreshToken(userId: number, refreshToken: string): Promise<void> {
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7)
+
+    await prisma.userSession.create({
+      data: {
+        userId,
+        refreshToken,
+        expiresAt,
+      },
+    })
+  }
+
+  static async verifyRefreshToken(userId: number, refreshToken: string): Promise<boolean> {
+    const session = await prisma.userSession.findFirst({
+      where: {
+        userId,
+        refreshToken,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    })
+
+    return !!session
+  }
+
+  static async revokeRefreshTokens(userId: number): Promise<void> {
+    await prisma.userSession.deleteMany({
+      where: { userId },
     })
   }
 }

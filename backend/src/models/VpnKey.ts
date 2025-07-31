@@ -1,5 +1,4 @@
-import { prisma } from '@/utils/prisma'
-import { createError } from '@/middleware/errorHandler'
+import { prisma } from '../utils/prisma'
 import { VpnKey } from '@prisma/client'
 
 export interface ICreateVpnKey {
@@ -60,7 +59,7 @@ export class VpnKeyModel {
       })
     } catch (error: any) {
       if (error.code === 'P2025') {
-        throw createError('VPN key not found', 404)
+        throw new Error('VPN key not found')
       }
       throw error
     }
@@ -73,7 +72,7 @@ export class VpnKeyModel {
       })
     } catch (error: any) {
       if (error.code === 'P2025') {
-        throw createError('VPN key not found', 404)
+        throw new Error('VPN key not found')
       }
       throw error
     }
@@ -85,7 +84,7 @@ export class VpnKeyModel {
         where: { outlineKeyId },
       })
     } catch (error: any) {
-      throw createError('VPN key not found', 404)
+      throw new Error('VPN key not found')
     }
   }
 
@@ -172,5 +171,19 @@ export class VpnKeyModel {
       take: limit,
       skip: offset,
     })
+  }
+
+  static async updateOwner(id: number, newUserId: number): Promise<VpnKey> {
+    try {
+      return await prisma.vpnKey.update({
+        where: { id },
+        data: { userId: newUserId },
+      })
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        throw new Error('VPN key not found')
+      }
+      throw error
+    }
   }
 }

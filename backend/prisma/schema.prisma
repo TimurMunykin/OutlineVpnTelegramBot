@@ -48,7 +48,6 @@ model OAuthClient {
   user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   oauthAuthorizationCodes  OAuthAuthorizationCode[]
   oauthAccessTokens        OAuthAccessToken[]
-  oauthRefreshTokens       OAuthRefreshToken[]
 
   @@map("oauth_clients")
 }
@@ -96,7 +95,6 @@ model OAuthRefreshToken {
 
   // Relations
   accessToken OAuthAccessToken @relation(fields: [accessTokenId], references: [id], onDelete: Cascade)
-  client      OAuthClient      @relation(fields: [accessTokenId], references: [id])
 
   @@map("oauth_refresh_tokens")
 }

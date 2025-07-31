@@ -1,6 +1,5 @@
 import { OutlineVPN } from 'outlinevpn-api'
-import { createError } from '@/middleware/errorHandler'
-import { VpnKeyModel } from '@/models/VpnKey'
+import { VpnKeyModel } from '../models/VpnKey'
 
 class VpnService {
   private outlineVpn: OutlineVPN;
@@ -43,7 +42,7 @@ class VpnService {
       }
     } catch (error) {
       console.error('Error creating VPN key:', error)
-      throw createError('Could not create VPN key', 500)
+      throw new Error('Could not create VPN key')
     }
   }
 
@@ -57,7 +56,7 @@ class VpnService {
       }));
     } catch (error) {
       console.error('Error listing VPN keys:', error);
-      throw createError('Could not list VPN keys', 500);
+      throw new Error('Could not list VPN keys');
     }
   }
 
@@ -70,7 +69,7 @@ class VpnService {
       await VpnKeyModel.deleteByOutlineKeyId(keyId)
     } catch (error) {
       console.error(`Error removing VPN key ${keyId}:`, error)
-      throw createError(`Could not remove VPN key ${keyId}`, 500)
+      throw new Error(`Could not remove VPN key ${keyId}`)
     }
   }
 
@@ -80,7 +79,7 @@ class VpnService {
       return keyInfo;
     } catch (error) {
       console.error(`Error fetching info for VPN key ${keyId}:`, error);
-      throw createError(`Could not fetch info for VPN key ${keyId}`, 404);
+      throw new Error(`Could not fetch info for VPN key ${keyId}`);
     }
   }
 
@@ -89,7 +88,7 @@ class VpnService {
       await this.outlineVpn.renameUser(keyId, name);
     } catch (error) {
       console.error(`Error renaming VPN key ${keyId}:`, error);
-      throw createError(`Could not rename VPN key ${keyId}`, 500);
+      throw new Error(`Could not rename VPN key ${keyId}`);
     }
   }
 
@@ -99,7 +98,7 @@ class VpnService {
       return info
     } catch (error) {
       console.error('Error getting server info:', error)
-      throw createError('Could not get server info', 500)
+      throw new Error('Could not get server info')
     }
   }
 }
