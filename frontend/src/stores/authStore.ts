@@ -5,10 +5,10 @@ export interface User {
   id: number
   email: string
   name: string
-  role: 'admin' | 'user'
-  is_email_verified: boolean
-  created_at: string
-  updated_at: string
+  role: 'ADMIN' | 'USER'
+  isEmailVerified: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthState {

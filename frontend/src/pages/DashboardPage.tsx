@@ -87,7 +87,7 @@ const DashboardPage: React.FC = () => {
       const mockActivity: RecentActivity[] = []
       
       if (vpnKeysResult.status === 'fulfilled' && vpnKeysResult.value.data.keys) {
-        vpnKeysResult.value.data.keys.slice(0, 3).forEach((key: any, index: number) => {
+        vpnKeysResult.value.data.keys.slice(0, 3).forEach((key: any) => {
           mockActivity.push({
             id: `key-${key.id}`,
             type: 'key_created',
@@ -182,14 +182,14 @@ const DashboardPage: React.FC = () => {
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card 
               sx={{ 
-                cursor: stat.action ? 'pointer' : 'default',
-                '&:hover': stat.action ? { 
+                cursor: 'pointer',
+                '&:hover': { 
                   transform: 'translateY(-2px)',
                   boxShadow: 3,
-                } : {},
+                },
                 transition: 'all 0.2s ease-in-out',
               }}
-              onClick={stat.action}
+              onClick={() => stat.action()}
             >
               <CardContent>
                 <Box
