@@ -10,6 +10,7 @@ import UsersPage from '@/pages/UsersPage'
 import VpnClientsPage from '@/pages/VpnClientsPage'
 import InvitesPage from '@/pages/InvitesPage'
 import InviteRegistrationPage from '@/pages/InviteRegistrationPage'
+import SettingsPage from '@/pages/SettingsPage'
 import OAuthAppsPage from '@/pages/OAuthAppsPage'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <Route path="/users" element={<UsersPage />} />
         <Route path="/vpn-clients" element={<VpnClientsPage />} />
         <Route path="/invites" element={<InvitesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/oauth-apps" element={<OAuthAppsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

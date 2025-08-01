@@ -22,6 +22,7 @@ import {
 } from '@mui/material'
 import { Add, Delete, ContentCopy, Info, Person, PersonAdd } from '@mui/icons-material'
 import { vpnApi } from '../services/api'
+import { useAuthStore } from '@/stores/authStore'
 
 interface VpnKey {
   id: number
@@ -44,12 +45,20 @@ interface VpnKey {
 }
 
 const VpnKeysPage: React.FC = () => {
+  const { user, token } = useAuthStore()
   const [keys, setKeys] = useState<VpnKey[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [newKeyName, setNewKeyName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [canCreateKeys, setCanCreateKeys] = useState(false)
+  const [userLimits, setUserLimits] = useState<{
+    currentCount: number
+    maxAllowed: number
+    canCreate: boolean
+    reason?: string
+  } | null>(null)
 
   const fetchKeys = async () => {
     try {
@@ -64,6 +73,39 @@ const VpnKeysPage: React.FC = () => {
     }
   }
 
+  const checkUserLimits = async () => {
+    // Админы всегда могут создавать ключи
+    if (user?.role === 'ADMIN') {
+      setCanCreateKeys(true)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/vpn/can-create-key', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+      
+      if (data.canCreate) {
+        setCanCreateKeys(true)
+      } else {
+        setCanCreateKeys(false)
+        setUserLimits({
+          currentCount: data.currentCount || 0,
+          maxAllowed: data.maxAllowed || 0,
+          canCreate: false,
+          reason: data.reason || 'Cannot create keys'
+        })
+      }
+    } catch (err) {
+      // В случае ошибки запрещаем создание ключей
+      setCanCreateKeys(false)
+    }
+  }
+
   const handleCreateKey = async () => {
     try {
       setCreating(true)
@@ -71,6 +113,7 @@ const VpnKeysPage: React.FC = () => {
       setCreateDialogOpen(false)
       setNewKeyName('')
       await fetchKeys()
+      await checkUserLimits() // Перепроверяем лимиты после создания ключа
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create VPN key')
     } finally {
@@ -86,6 +129,7 @@ const VpnKeysPage: React.FC = () => {
     try {
       await vpnApi.deleteKey(keyId.toString())
       await fetchKeys()
+      await checkUserLimits() // Перепроверяем лимиты после удаления ключа
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to delete VPN key')
     }
@@ -97,6 +141,7 @@ const VpnKeysPage: React.FC = () => {
 
   useEffect(() => {
     fetchKeys()
+    checkUserLimits()
   }, [])
 
   if (loading) {
@@ -120,18 +165,26 @@ const VpnKeysPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           VPN Keys
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          Create Key
-        </Button>
+        {canCreateKeys && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            Create Key
+          </Button>
+        )}
       </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
+        </Alert>
+      )}
+
+      {!canCreateKeys && userLimits && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {userLimits.reason} (Current: {userLimits.currentCount}/{userLimits.maxAllowed} keys)
         </Alert>
       )}
 

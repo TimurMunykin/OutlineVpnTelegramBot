@@ -21,6 +21,20 @@ router.get('/keys', authenticateToken, requireUser, VpnController.getKeys);
 
 /**
  * @swagger
+ * /api/vpn/can-create-key:
+ *   get:
+ *     summary: Check if user can create VPN keys
+ *     tags: [VPN]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User key creation status
+ */
+router.get('/can-create-key', authenticateToken, requireUser, VpnController.canCreateKey);
+
+/**
+ * @swagger
  * /api/vpn/unassociated-keys:
  *   get:
  *     summary: Get unassociated VPN keys from Outline server (admin only)

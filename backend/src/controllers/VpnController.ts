@@ -35,6 +35,36 @@ export class VpnController {
       console.warn('Sync failed, continuing with DB data:', syncError);
     }
   }
+  static async canCreateKey(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Админы всегда могут создавать ключи
+      if (req.user.role === 'ADMIN') {
+        return res.json({
+          canCreate: true,
+          currentCount: 0,
+          maxAllowed: 999,
+        });
+      }
+
+      const { UserLimitModel } = await import('../models/UserLimit');
+      const limitCheck = await UserLimitModel.canUserCreateKey(req.user.id);
+      
+      res.json({
+        canCreate: limitCheck.canCreate,
+        reason: limitCheck.reason,
+        currentCount: limitCheck.currentCount,
+        maxAllowed: limitCheck.maxAllowed,
+      });
+    } catch (error) {
+      console.error('Error checking user limits:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   static async getUnassociatedKeys(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
@@ -133,14 +163,18 @@ export class VpnController {
         });
       }
 
-      // Check user's key limit (optional business rule)
+      // Check user's key limit using new settings system
       if (!vpnClientId && req.user.role !== 'ADMIN') {
-        const userKeys = await VpnKeyModel.findByUserId(req.user.id);
-        const maxKeysPerUser = parseInt(process.env.MAX_KEYS_PER_USER || '5');
+        const { UserLimitModel } = await import('../models/UserLimit');
+        const limitCheck = await UserLimitModel.canUserCreateKey(req.user.id);
         
-        if (userKeys.length >= maxKeysPerUser) {
+        if (!limitCheck.canCreate) {
           return res.status(400).json({ 
-            error: `Maximum ${maxKeysPerUser} keys per user allowed` 
+            error: limitCheck.reason,
+            details: {
+              currentCount: limitCheck.currentCount,
+              maxAllowed: limitCheck.maxAllowed
+            }
           });
         }
       }

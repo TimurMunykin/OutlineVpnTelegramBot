@@ -32,6 +32,7 @@ model User {
   createdVpnClients         VpnClient[]
   migratedVpnClients        VpnClient[] @relation("MigratedUser")
   usedInviteTokens          InviteToken[]
+  userLimit                 UserLimit?
 
   @@map("users")
 }
@@ -198,4 +199,30 @@ enum MigrationStatus {
   COMPLETED   @map("completed")
 
   @@map("migration_status")
+}
+
+model Setting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model UserLimit {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique @map("user_id")
+  maxVpnKeys      Int?     @map("max_vpn_keys")
+  canCreateKeys   Boolean  @default(true) @map("can_create_keys")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_limits")
 }

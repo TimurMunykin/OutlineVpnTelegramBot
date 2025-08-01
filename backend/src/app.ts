@@ -13,6 +13,7 @@ import userRoutes from './routes/users';
 import vpnRoutes from './routes/vpn';
 import vpnClientRoutes from './routes/vpnClients';
 import inviteRoutes from './routes/invites';
+import settingsRoutes from './routes/settings';
 import oauthRoutes from './routes/oauth';
 
 dotenv.config();
@@ -23,8 +24,8 @@ const PORT = process.env.PORT || 3001;
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://yourdomain.com']
     : ['http://localhost:3000'],
   credentials: true
 }));
@@ -32,7 +33,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -97,6 +98,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/vpn', vpnRoutes);
 app.use('/api/vpn-clients', vpnClientRoutes);
 app.use('/api/invites', inviteRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/oauth', oauthRoutes);
 
 // OAuth discovery endpoint

@@ -27,6 +27,7 @@ import {
   Logout,
   PersonAdd,
   Link as LinkIcon,
+  Settings,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -68,6 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       { text: 'Users', icon: <People />, path: '/users' },
       { text: 'VPN Clients', icon: <PersonAdd />, path: '/vpn-clients' },
       { text: 'Invites', icon: <LinkIcon />, path: '/invites' },
+      { text: 'Settings', icon: <Settings />, path: '/settings' },
     ] : []),
     { text: 'OAuth Apps', icon: <Apps />, path: '/oauth-apps' },
   ]
