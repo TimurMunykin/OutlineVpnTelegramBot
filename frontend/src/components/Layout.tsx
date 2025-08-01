@@ -28,6 +28,7 @@ import {
   PersonAdd,
   Link as LinkIcon,
   Settings,
+  AccountBalance,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -65,6 +66,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/' },
     { text: 'VPN Keys', icon: <VpnKey />, path: '/vpn-keys' },
+    { text: 'Billing', icon: <AccountBalance />, path: '/billing' },
     ...(user?.role === 'ADMIN' ? [
       { text: 'Users', icon: <People />, path: '/users' },
       { text: 'VPN Clients', icon: <PersonAdd />, path: '/vpn-clients' },

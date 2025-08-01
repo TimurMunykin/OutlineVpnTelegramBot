@@ -12,6 +12,7 @@ import InvitesPage from '@/pages/InvitesPage'
 import InviteRegistrationPage from '@/pages/InviteRegistrationPage'
 import SettingsPage from '@/pages/SettingsPage'
 import OAuthAppsPage from '@/pages/OAuthAppsPage'
+import { BillingPage } from '@/pages/BillingPage'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
@@ -38,6 +39,7 @@ function App() {
         <Route path="/vpn-clients" element={<VpnClientsPage />} />
         <Route path="/invites" element={<InvitesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/billing" element={<BillingPage />} />
         <Route path="/oauth-apps" element={<OAuthAppsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

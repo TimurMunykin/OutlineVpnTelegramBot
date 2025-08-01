@@ -14,7 +14,9 @@ import vpnRoutes from './routes/vpn';
 import vpnClientRoutes from './routes/vpnClients';
 import inviteRoutes from './routes/invites';
 import settingsRoutes from './routes/settings';
+import billingRoutes from './routes/billing';
 import oauthRoutes from './routes/oauth';
+import { cronService } from './services/CronService';
 
 dotenv.config();
 
@@ -99,6 +101,7 @@ app.use('/api/vpn', vpnRoutes);
 app.use('/api/vpn-clients', vpnClientRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api/oauth', oauthRoutes);
 
 // OAuth discovery endpoint
@@ -124,6 +127,10 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
   console.log(`🔍 OAuth Discovery: http://localhost:${PORT}/.well-known/oauth-authorization-server`);
+  
+  // Start cron jobs
+  cronService.startBillingJob();
+  console.log(`⏰ Billing cron job started (daily at 02:00 AM)`);
 });
 
 export default app;

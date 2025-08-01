@@ -19,6 +19,14 @@ model User {
   isEmailVerified   Boolean          @default(false) @map("is_email_verified")
   hasWebAccess      Boolean          @default(true) @map("has_web_access")
   migrationStatus   MigrationStatus? @map("migration_status")
+  
+  // Billing fields
+  subscriptionType    SubscriptionType @default(FREE) @map("subscription_type")
+  balance            Int              @default(0)
+  subscriptionStartDate DateTime?      @map("subscription_start_date")
+  nextBillingDate    DateTime?        @map("next_billing_date")
+  subscriptionStatus SubscriptionStatus @default(ACTIVE) @map("subscription_status")
+  
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
@@ -33,6 +41,8 @@ model User {
   migratedVpnClients        VpnClient[] @relation("MigratedUser")
   usedInviteTokens          InviteToken[]
   userLimit                 UserLimit?
+  balanceTransactions       BalanceTransaction[]
+  performedTransactions     BalanceTransaction[] @relation("PerformedTransactions")
 
   @@map("users")
 }
@@ -225,4 +235,42 @@ model UserLimit {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_limits")
+}
+
+model BalanceTransaction {
+  id           Int                      @id @default(autoincrement())
+  userId       Int                      @map("user_id")
+  amount       Int                      // Positive = credit, negative = debit
+  type         BalanceTransactionType
+  description  String
+  performedBy  Int?                     @map("performed_by") // Admin who performed the action
+  createdAt    DateTime                 @default(now()) @map("created_at")
+
+  // Relations
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  performedByUser User? @relation(fields: [performedBy], references: [id], name: "PerformedTransactions")
+
+  @@map("balance_transactions")
+}
+
+enum SubscriptionType {
+  FREE @map("free")
+  PAID @map("paid")
+
+  @@map("subscription_type")
+}
+
+enum SubscriptionStatus {
+  ACTIVE               @map("active")
+  INSUFFICIENT_BALANCE @map("insufficient_balance")
+
+  @@map("subscription_status")
+}
+
+enum BalanceTransactionType {
+  PAYMENT         @map("payment")
+  MONTHLY_CHARGE  @map("monthly_charge") 
+  ADMIN_ADJUSTMENT @map("admin_adjustment")
+
+  @@map("balance_transaction_type")
 }

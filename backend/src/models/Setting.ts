@@ -34,6 +34,14 @@ export class SettingModel {
     'invites.default_expiration_days': {
       value: '7',
       description: 'Default invitation expiration in days'
+    },
+    'billing.monthly_cost': {
+      value: '100',
+      description: 'Monthly subscription cost in points/credits'
+    },
+    'billing.currency_name': {
+      value: 'баллов',
+      description: 'Name of the currency/points for display'
     }
   }
 
@@ -108,5 +116,13 @@ export class SettingModel {
 
   static async getDefaultInviteExpirationDays(): Promise<number> {
     return this.getInt('invites.default_expiration_days', 7)
+  }
+
+  static async getBillingMonthlyCost(): Promise<number> {
+    return this.getInt('billing.monthly_cost', 100)
+  }
+
+  static async getBillingCurrencyName(): Promise<string> {
+    return this.getWithDefault('billing.currency_name', 'баллов')
   }
 }
