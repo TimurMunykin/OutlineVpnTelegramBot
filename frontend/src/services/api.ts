@@ -73,7 +73,9 @@ export const authApi = {
 export const vpnApi = {
   getKeys: () => api.get('/vpn/keys'),
   
-  createKey: (name?: string) => api.post('/vpn/keys', { name }),
+  getUnassociatedKeys: () => api.get('/vpn/unassociated-keys'),
+  
+  createKey: (name?: string, vpnClientId?: number) => api.post('/vpn/keys', { name, vpnClientId }),
   
   getKey: (id: string) => api.get(`/vpn/keys/${id}`),
   
@@ -83,16 +85,53 @@ export const vpnApi = {
     api.put(`/vpn/keys/${id}`, { name }),
 }
 
+// VPN Clients API
+export const vpnClientsApi = {
+  getVpnClients: () => api.get('/vpn-clients'),
+  
+  getVpnClient: (id: number) => api.get(`/vpn-clients/${id}`),
+  
+  createVpnClient: (name: string, phone?: string, telegramId?: string, notes?: string, migrationStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED', existingKeyId?: string) =>
+    api.post('/vpn-clients', { name, phone, telegramId, notes, migrationStatus, existingKeyId }),
+  
+  updateVpnClient: (id: number, updates: any) => api.put(`/vpn-clients/${id}`, updates),
+  
+  deleteVpnClient: (id: number) => api.delete(`/vpn-clients/${id}`),
+  
+  getVpnClientStats: () => api.get('/vpn-clients/stats'),
+}
+
+// Invites API
+export const invitesApi = {
+  getInvites: () => api.get('/invites'),
+  
+  createInvite: (vpnClientId: number, email?: string, expiresInDays?: number) =>
+    api.post('/invites', { vpnClientId, email, expiresInDays }),
+  
+  validateInvite: (token: string) => api.get(`/invites/validate/${token}`),
+  
+  useInvite: (token: string, email: string, name: string, password: string) =>
+    api.post('/invites/use', { token, email, name, password }),
+  
+  deleteInvite: (id: string) => api.delete(`/invites/${id}`),
+  
+  getInviteStats: () => api.get('/invites/stats'),
+}
+
 // Users API
 export const usersApi = {
   getUsers: () => api.get('/users'),
   
-  createUser: (email: string, name: string, password: string, role: 'admin' | 'user') =>
-    api.post('/users', { email, name, password, role }),
+  getUser: (id: number) => api.get(`/users/${id}`),
+  
+  createUser: (email: string, name: string, password: string, role: 'USER' | 'ADMIN', hasWebAccess?: boolean, migrationStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED') =>
+    api.post('/users', { email, name, password, role, hasWebAccess, migrationStatus }),
   
   updateUser: (id: number, updates: any) => api.put(`/users/${id}`, updates),
   
   deleteUser: (id: number) => api.delete(`/users/${id}`),
+  
+  getUserStats: () => api.get('/users/stats'),
 }
 
 // OAuth API

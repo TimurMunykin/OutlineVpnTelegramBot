@@ -98,6 +98,13 @@ export class AuthController {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
+      // Check if user has web access
+      if (!user.hasWebAccess) {
+        return res.status(403).json({ 
+          error: 'Web access is not enabled for this account' 
+        });
+      }
+
       const accessToken = jwt.sign(
         { 
           id: user.id, 
@@ -150,6 +157,13 @@ export class AuthController {
       const user = await UserModel.findById(decoded.id);
       if (!user) {
         return res.status(401).json({ error: 'User not found' });
+      }
+
+      // Check if user still has web access
+      if (!user.hasWebAccess) {
+        return res.status(403).json({ 
+          error: 'Web access is not enabled for this account' 
+        });
       }
 
       const newAccessToken = jwt.sign(

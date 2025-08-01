@@ -18,7 +18,7 @@ class VpnService {
     });
   }
 
-  async createVpnKey(userId: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: any }> {
+  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: any }> {
     try {
       const key = await this.outlineVpn.createUser()
       
@@ -30,6 +30,7 @@ class VpnService {
       // Save to database
       const dbKey = await VpnKeyModel.create({
         userId,
+        vpnClientId,
         outlineKeyId: key.id,
         accessUrl: key.accessUrl,
         name,

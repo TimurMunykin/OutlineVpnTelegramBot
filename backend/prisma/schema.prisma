@@ -11,14 +11,16 @@ datasource db {
 }
 
 model User {
-  id                Int       @id @default(autoincrement())
-  email             String    @unique
+  id                Int              @id @default(autoincrement())
+  email             String           @unique
   name              String
-  passwordHash      String    @map("password_hash")
-  role              UserRole  @default(USER)
-  isEmailVerified   Boolean   @default(false) @map("is_email_verified")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  passwordHash      String           @map("password_hash")
+  role              UserRole         @default(USER)
+  isEmailVerified   Boolean          @default(false) @map("is_email_verified")
+  hasWebAccess      Boolean          @default(true) @map("has_web_access")
+  migrationStatus   MigrationStatus? @map("migration_status")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
   // Relations
   vpnKeys                    VpnKey[]
@@ -27,6 +29,9 @@ model User {
   passwordResetTokens       PasswordResetToken[]
   oauthAuthorizationCodes   OAuthAuthorizationCode[]
   oauthAccessTokens         OAuthAccessToken[]
+  createdVpnClients         VpnClient[]
+  migratedVpnClients        VpnClient[] @relation("MigratedUser")
+  usedInviteTokens          InviteToken[]
 
   @@map("users")
 }
@@ -112,16 +117,57 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model VpnClient {
+  id               Int              @id @default(autoincrement())
+  name             String
+  phone            String?
+  telegramId       String?          @map("telegram_id")
+  notes            String?
+  migrationStatus  MigrationStatus? @map("migration_status")
+  migratedToUserId Int?             @map("migrated_to_user_id")
+  createdBy        Int              @map("created_by")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  creator      User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  migratedUser User?        @relation("MigratedUser", fields: [migratedToUserId], references: [id])
+  vpnKeys      VpnKey[]
+  inviteTokens InviteToken[]
+
+  @@map("vpn_clients")
+}
+
+model InviteToken {
+  id           String    @id @default(cuid())
+  vpnClientId  Int       @map("vpn_client_id")
+  email        String?
+  token        String    @unique
+  expiresAt    DateTime  @map("expires_at")
+  isUsed       Boolean   @default(false) @map("is_used")
+  usedAt       DateTime? @map("used_at")
+  usedByUserId Int?      @map("used_by_user_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  vpnClient VpnClient @relation(fields: [vpnClientId], references: [id], onDelete: Cascade)
+  usedBy    User?     @relation(fields: [usedByUserId], references: [id])
+
+  @@map("invite_tokens")
+}
+
 model VpnKey {
   id            Int      @id @default(autoincrement())
-  userId        Int      @map("user_id")
+  userId        Int?     @map("user_id")
+  vpnClientId   Int?     @map("vpn_client_id")
   outlineKeyId  String   @map("outline_key_id")
   accessUrl     String   @map("access_url")
   name          String?
   createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vpnClient VpnClient? @relation(fields: [vpnClientId], references: [id], onDelete: Cascade)
 
   @@map("vpn_keys")
 }
@@ -144,4 +190,12 @@ enum UserRole {
   USER  @map("user")
 
   @@map("user_role")
+}
+
+enum MigrationStatus {
+  PENDING     @map("pending")
+  IN_PROGRESS @map("in_progress")
+  COMPLETED   @map("completed")
+
+  @@map("migration_status")
 }

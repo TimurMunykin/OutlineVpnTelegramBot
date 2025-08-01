@@ -2,7 +2,8 @@ import { prisma } from '../utils/prisma'
 import { VpnKey } from '@prisma/client'
 
 export interface ICreateVpnKey {
-  userId: number
+  userId?: number
+  vpnClientId?: number
   outlineKeyId: string
   accessUrl: string
   name?: string
@@ -10,11 +11,12 @@ export interface ICreateVpnKey {
 
 export class VpnKeyModel {
   static async create(keyData: ICreateVpnKey): Promise<VpnKey> {
-    const { userId, outlineKeyId, accessUrl, name } = keyData
+    const { userId, vpnClientId, outlineKeyId, accessUrl, name } = keyData
     
     return prisma.vpnKey.create({
       data: {
         userId,
+        vpnClientId,
         outlineKeyId,
         accessUrl,
         name,
@@ -37,6 +39,15 @@ export class VpnKeyModel {
   static async findByUserId(userId: number, limit = 50, offset = 0): Promise<VpnKey[]> {
     return prisma.vpnKey.findMany({
       where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    })
+  }
+
+  static async findByVpnClientId(vpnClientId: number, limit = 50, offset = 0): Promise<VpnKey[]> {
+    return prisma.vpnKey.findMany({
+      where: { vpnClientId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
@@ -110,6 +121,14 @@ export class VpnKeyModel {
             role: true,
           },
         },
+        vpnClient: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            migrationStatus: true,
+          },
+        },
       },
     })
   }
@@ -164,6 +183,14 @@ export class VpnKeyModel {
             email: true,
             name: true,
             role: true,
+          },
+        },
+        vpnClient: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            migrationStatus: true,
           },
         },
       },

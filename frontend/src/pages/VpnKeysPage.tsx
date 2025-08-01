@@ -20,7 +20,7 @@ import {
   Alert,
   Chip,
 } from '@mui/material'
-import { Add, Delete, ContentCopy, Info } from '@mui/icons-material'
+import { Add, Delete, ContentCopy, Info, Person, PersonAdd } from '@mui/icons-material'
 import { vpnApi } from '../services/api'
 
 interface VpnKey {
@@ -33,6 +33,13 @@ interface VpnKey {
     id: number
     name: string
     email: string
+    role: string
+  }
+  vpnClient?: {
+    id: number
+    name: string
+    phone?: string
+    migrationStatus?: string
   }
 }
 
@@ -141,7 +148,8 @@ const VpnKeysPage: React.FC = () => {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Access URL</TableCell>
-                <TableCell>User</TableCell>
+                <TableCell>Owner</TableCell>
+                <TableCell>Type</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -176,13 +184,72 @@ const VpnKeysPage: React.FC = () => {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    {key.user && (
-                      <Box>
-                        <Typography variant="body2">{key.user.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {key.user.email}
-                        </Typography>
+                    {key.user ? (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Person fontSize="small" color="primary" />
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {key.user.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {key.user.email}
+                          </Typography>
+                        </Box>
                       </Box>
+                    ) : key.vpnClient ? (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PersonAdd fontSize="small" color="secondary" />
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {key.vpnClient.name}
+                          </Typography>
+                          {key.vpnClient.phone && (
+                            <Typography variant="caption" color="text.secondary">
+                              {key.vpnClient.phone}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Unassigned
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {key.user ? (
+                      <Chip
+                        label={`Web User (${key.user.role})`}
+                        color="primary"
+                        size="small"
+                        variant="outlined"
+                      />
+                    ) : key.vpnClient ? (
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
+                        <Chip
+                          label="VPN Client"
+                          color="secondary"
+                          size="small"
+                          variant="outlined"
+                        />
+                        {key.vpnClient.migrationStatus && (
+                          <Chip
+                            label={key.vpnClient.migrationStatus}
+                            color={
+                              key.vpnClient.migrationStatus === 'COMPLETED' ? 'success' :
+                              key.vpnClient.migrationStatus === 'IN_PROGRESS' ? 'warning' : 'default'
+                            }
+                            size="small"
+                          />
+                        )}
+                      </Box>
+                    ) : (
+                      <Chip
+                        label="Unassigned"
+                        color="default"
+                        size="small"
+                        variant="outlined"
+                      />
                     )}
                   </TableCell>
                   <TableCell>

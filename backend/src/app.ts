@@ -11,6 +11,8 @@ import { notFound } from './middleware/notFound';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import vpnRoutes from './routes/vpn';
+import vpnClientRoutes from './routes/vpnClients';
+import inviteRoutes from './routes/invites';
 import oauthRoutes from './routes/oauth';
 
 dotenv.config();
@@ -93,6 +95,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/vpn', vpnRoutes);
+app.use('/api/vpn-clients', vpnClientRoutes);
+app.use('/api/invites', inviteRoutes);
 app.use('/api/oauth', oauthRoutes);
 
 // OAuth discovery endpoint

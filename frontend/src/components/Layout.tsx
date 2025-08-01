@@ -25,6 +25,8 @@ import {
   Apps,
   AccountCircle,
   Logout,
+  PersonAdd,
+  Link as LinkIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -62,8 +64,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/' },
     { text: 'VPN Keys', icon: <VpnKey />, path: '/vpn-keys' },
-    ...(user?.role === 'admin' ? [
+    ...(user?.role === 'ADMIN' ? [
       { text: 'Users', icon: <People />, path: '/users' },
+      { text: 'VPN Clients', icon: <PersonAdd />, path: '/vpn-clients' },
+      { text: 'Invites', icon: <LinkIcon />, path: '/invites' },
     ] : []),
     { text: 'OAuth Apps', icon: <Apps />, path: '/oauth-apps' },
   ]

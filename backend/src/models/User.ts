@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import { prisma } from '../utils/prisma'
-import { User, UserRole } from '@prisma/client'
+import { User, UserRole, MigrationStatus } from '@prisma/client'
 
 export interface ICreateUser {
   email: string
@@ -8,11 +8,21 @@ export interface ICreateUser {
   password: string
   role?: UserRole
   isEmailVerified?: boolean
+  hasWebAccess?: boolean
+  migrationStatus?: MigrationStatus
 }
 
 export class UserModel {
   static async create(userData: ICreateUser): Promise<User & { password: string }> {
-    const { email, name, password, role = UserRole.USER, isEmailVerified = false } = userData
+    const { 
+      email, 
+      name, 
+      password, 
+      role = UserRole.USER, 
+      isEmailVerified = false,
+      hasWebAccess = true,
+      migrationStatus
+    } = userData
 
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
@@ -24,6 +34,8 @@ export class UserModel {
         passwordHash,
         role,
         isEmailVerified,
+        hasWebAccess,
+        migrationStatus,
       },
     })
 
@@ -89,7 +101,7 @@ export class UserModel {
 
   static async updateUser(
     userId: number, 
-    updates: Partial<Pick<User, 'name' | 'email' | 'role'>>
+    updates: Partial<Pick<User, 'name' | 'email' | 'role' | 'hasWebAccess' | 'migrationStatus'>>
   ): Promise<User> {
     const user = await prisma.user.update({
       where: { id: userId },

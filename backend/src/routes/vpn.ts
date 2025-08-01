@@ -21,6 +21,20 @@ router.get('/keys', authenticateToken, requireUser, VpnController.getKeys);
 
 /**
  * @swagger
+ * /api/vpn/unassociated-keys:
+ *   get:
+ *     summary: Get unassociated VPN keys from Outline server (admin only)
+ *     tags: [VPN]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of unassociated VPN keys
+ */
+router.get('/unassociated-keys', authenticateToken, requireAdmin, VpnController.getUnassociatedKeys);
+
+/**
+ * @swagger
  * /api/vpn/keys:
  *   post:
  *     summary: Create a new VPN key

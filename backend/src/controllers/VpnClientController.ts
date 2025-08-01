@@ -1,0 +1,245 @@
+import { Request, Response } from 'express';
+import { VpnClientModel } from '../models/VpnClient';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+interface CreateVpnClientRequest extends AuthenticatedRequest {
+  body: {
+    name: string;
+    phone?: string;
+    telegramId?: string;
+    notes?: string;
+    migrationStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+    existingKeyId?: string; // Outline key ID to associate
+  };
+}
+
+interface UpdateVpnClientRequest extends AuthenticatedRequest {
+  params: {
+    id: string;
+  };
+  body: {
+    name?: string;
+    phone?: string;
+    telegramId?: string;
+    notes?: string;
+    migrationStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  };
+}
+
+interface VpnClientParamsRequest extends AuthenticatedRequest {
+  params: {
+    id: string;
+  };
+}
+
+export class VpnClientController {
+  static async getVpnClients(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут просматривать VPN клиентов
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const clients = await VpnClientModel.findAll();
+
+      res.json({
+        clients,
+      });
+    } catch (error) {
+      console.error('Error fetching VPN clients:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async getVpnClient(req: VpnClientParamsRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут просматривать VPN клиентов
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const clientId = parseInt(req.params.id);
+      const client = await VpnClientModel.findById(clientId);
+
+      if (!client) {
+        return res.status(404).json({ error: 'VPN client not found' });
+      }
+
+      res.json({
+        client,
+      });
+    } catch (error) {
+      console.error('Error fetching VPN client:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async createVpnClient(req: CreateVpnClientRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут создавать VPN клиентов
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { name, phone, telegramId, notes, migrationStatus, existingKeyId } = req.body;
+
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({
+          error: 'Name is required',
+        });
+      }
+
+      const client = await VpnClientModel.create({
+        name: name.trim(),
+        phone: phone?.trim(),
+        telegramId: telegramId?.trim(),
+        notes: notes?.trim(),
+        migrationStatus,
+        createdBy: req.user.id,
+      });
+
+      // If existing key ID provided, associate it with the client
+      if (existingKeyId) {
+        const { vpnService } = await import('../services/vpnService');
+        const { VpnKeyModel } = await import('../models/VpnKey');
+        
+        try {
+          // Get key info from Outline server
+          const keyInfo = await vpnService.getKeyInfo(existingKeyId);
+          
+          // Create VPN key record in database
+          await VpnKeyModel.create({
+            vpnClientId: client.id,
+            outlineKeyId: existingKeyId,
+            accessUrl: keyInfo.accessUrl,
+            name: keyInfo.name || client.name,
+          });
+        } catch (error) {
+          console.error('Error associating existing key:', error);
+          // Don't fail client creation if key association fails
+        }
+      }
+
+      res.status(201).json({
+        message: 'VPN client created successfully',
+        client,
+      });
+    } catch (error) {
+      console.error('Error creating VPN client:', error);
+      res.status(500).json({ error: 'Failed to create VPN client' });
+    }
+  }
+
+  static async updateVpnClient(req: UpdateVpnClientRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут обновлять VPN клиентов
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const clientId = parseInt(req.params.id);
+      const { name, phone, telegramId, notes, migrationStatus } = req.body;
+
+      const existingClient = await VpnClientModel.findById(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ error: 'VPN client not found' });
+      }
+
+      // Подготавливаем обновления
+      const updates: any = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (phone !== undefined) updates.phone = phone?.trim() || null;
+      if (telegramId !== undefined) updates.telegramId = telegramId?.trim() || null;
+      if (notes !== undefined) updates.notes = notes?.trim() || null;
+      if (migrationStatus !== undefined) updates.migrationStatus = migrationStatus;
+
+      const updatedClient = await VpnClientModel.update(clientId, updates);
+
+      res.json({
+        message: 'VPN client updated successfully',
+        client: updatedClient,
+      });
+    } catch (error) {
+      console.error('Error updating VPN client:', error);
+      res.status(500).json({ error: 'Failed to update VPN client' });
+    }
+  }
+
+  static async deleteVpnClient(req: VpnClientParamsRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут удалять VPN клиентов
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const clientId = parseInt(req.params.id);
+
+      const client = await VpnClientModel.findById(clientId);
+      if (!client) {
+        return res.status(404).json({ error: 'VPN client not found' });
+      }
+
+      // Проверяем, что у клиента нет активных VPN ключей
+      if (client._count && client._count.vpnKeys > 0) {
+        return res.status(400).json({
+          error: 'Cannot delete client with active VPN keys. Remove VPN keys first.',
+        });
+      }
+
+      await VpnClientModel.delete(clientId);
+
+      res.json({
+        message: 'VPN client deleted successfully',
+        deletedClient: {
+          id: client.id,
+          name: client.name,
+        },
+      });
+    } catch (error) {
+      console.error('Error deleting VPN client:', error);
+      res.status(500).json({ error: 'Failed to delete VPN client' });
+    }
+  }
+
+  static async getVpnClientStats(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут просматривать статистику
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const stats = await VpnClientModel.getStats();
+
+      res.json({
+        stats,
+      });
+    } catch (error) {
+      console.error('Error fetching VPN client stats:', error);
+      res.status(500).json({ error: 'Failed to fetch VPN client statistics' });
+    }
+  }
+}

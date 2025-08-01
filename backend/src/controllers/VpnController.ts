@@ -7,6 +7,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 interface CreateKeyRequest extends AuthenticatedRequest {
   body: {
     name?: string;
+    vpnClientId?: number; // For creating keys for VPN clients
   };
 }
 
@@ -34,6 +35,36 @@ export class VpnController {
       console.warn('Sync failed, continuing with DB data:', syncError);
     }
   }
+  static async getUnassociatedKeys(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Только админы могут просматривать неассоциированные ключи
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Получаем все ключи с Outline сервера
+      const outlineKeys = await vpnService.listVpnKeys();
+      
+      // Получаем все ключи из нашей БД
+      const dbKeys = await VpnKeyModel.findAll(1000); // Берем много, чтобы точно все получить
+      const dbKeyIds = new Set(dbKeys.map(key => key.outlineKeyId));
+
+      // Фильтруем неассоциированные ключи
+      const unassociatedKeys = outlineKeys.filter(key => !dbKeyIds.has(key.id));
+
+      res.json({
+        keys: unassociatedKeys,
+      });
+    } catch (error) {
+      console.error('Error fetching unassociated keys:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   static async getKeys(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
@@ -53,17 +84,24 @@ export class VpnController {
         keys = await VpnKeyModel.findByUserId(req.user.id);
       }
 
-      // Enrich with user info for admin
+      // Enrich with user and client info for admin
       const keysWithUserInfo = await Promise.all(
         keys.map(async (key) => {
           if (req.user?.role === 'ADMIN') {
-            const user = await VpnKeyModel.getKeyWithUser(key.id);
+            const keyWithDetails = await VpnKeyModel.getKeyWithUser(key.id);
             return {
               ...key,
-              user: user?.user ? {
-                id: user.user.id,
-                name: user.user.name,
-                email: user.user.email,
+              user: keyWithDetails?.user ? {
+                id: keyWithDetails.user.id,
+                name: keyWithDetails.user.name,
+                email: keyWithDetails.user.email,
+                role: keyWithDetails.user.role,
+              } : null,
+              vpnClient: keyWithDetails?.vpnClient ? {
+                id: keyWithDetails.vpnClient.id,
+                name: keyWithDetails.vpnClient.name,
+                phone: keyWithDetails.vpnClient.phone,
+                migrationStatus: keyWithDetails.vpnClient.migrationStatus,
               } : null,
             };
           }
@@ -86,10 +124,17 @@ export class VpnController {
         return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const { name } = req.body;
+      const { name, vpnClientId } = req.body;
+
+      // Validate input: either for current user or for VPN client (admin only)
+      if (vpnClientId && req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          error: 'Only admins can create keys for VPN clients'
+        });
+      }
 
       // Check user's key limit (optional business rule)
-      if (req.user.role !== 'ADMIN') {
+      if (!vpnClientId && req.user.role !== 'ADMIN') {
         const userKeys = await VpnKeyModel.findByUserId(req.user.id);
         const maxKeysPerUser = parseInt(process.env.MAX_KEYS_PER_USER || '5');
         
@@ -100,7 +145,20 @@ export class VpnController {
         }
       }
 
-      const result = await vpnService.createVpnKey(req.user.id, name);
+      // If creating for VPN client, validate client exists
+      if (vpnClientId) {
+        const { VpnClientModel } = await import('../models/VpnClient');
+        const vpnClient = await VpnClientModel.findById(vpnClientId);
+        if (!vpnClient) {
+          return res.status(404).json({ error: 'VPN client not found' });
+        }
+      }
+
+      const result = await vpnService.createVpnKey(
+        vpnClientId ? undefined : req.user.id,
+        vpnClientId,
+        name
+      );
 
       // Синхронизация после создания ключа, чтобы обновить состояние
       await VpnController.ensureSync();
