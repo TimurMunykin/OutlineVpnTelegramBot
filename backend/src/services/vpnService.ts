@@ -1,4 +1,4 @@
-import { OutlineVPN } from 'outlinevpn-api'
+import { OutlineVPN, AccessKey, Server } from 'outlinevpn-api'
 import { VpnKeyModel } from '../models/VpnKey'
 
 class VpnService {
@@ -18,14 +18,11 @@ class VpnService {
     });
   }
 
-  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: any }> {
+  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: unknown }> {
     try {
-      const key = await this.outlineVpn.createUser()
+      const key = await this.outlineVpn.createAccessKey({ name })
       
-      // Set name if provided
-      if (name) {
-        await this.outlineVpn.renameUser(key.id, name)
-      }
+      // Name is set during creation in v3
 
       // Save to database
       const dbKey = await VpnKeyModel.create({
@@ -49,8 +46,11 @@ class VpnService {
 
   async listVpnKeys(): Promise<Array<{ id: string; name?: string; accessUrl: string }>> {
     try {
-      const keys = await this.outlineVpn.getUsers();
-      return keys.map((key: any) => ({
+      const response = await this.outlineVpn.getAccessKeys();
+      // In API v3, response has structure { accessKeys: [...] }
+      const keys: AccessKey[] = response.accessKeys || [];
+      
+      return keys.map((key: AccessKey) => ({
         id: key.id,
         name: key.name,
         accessUrl: key.accessUrl
@@ -64,7 +64,7 @@ class VpnService {
   async removeVpnKey(keyId: string): Promise<void> {
     try {
       // Delete from Outline VPN server
-      await this.outlineVpn.deleteUser(keyId)
+      await this.outlineVpn.deleteAccessKey(keyId)
       
       // Delete from database
       await VpnKeyModel.deleteByOutlineKeyId(keyId)
@@ -74,9 +74,9 @@ class VpnService {
     }
   }
 
-  async getKeyInfo(keyId: string): Promise<any> {
+  async getKeyInfo(keyId: string): Promise<AccessKey> {
     try {
-      const keyInfo = await this.outlineVpn.getUser(keyId);
+      const keyInfo = await this.outlineVpn.getAccessKey(keyId);
       return keyInfo;
     } catch (error) {
       console.error(`Error fetching info for VPN key ${keyId}:`, error);
@@ -86,14 +86,14 @@ class VpnService {
 
   async renameKey(keyId: string, name: string): Promise<void> {
     try {
-      await this.outlineVpn.renameUser(keyId, name);
+      await this.outlineVpn.renameAccessKey(keyId, name);
     } catch (error) {
       console.error(`Error renaming VPN key ${keyId}:`, error);
       throw new Error(`Could not rename VPN key ${keyId}`);
     }
   }
 
-  async getServerInfo(): Promise<any> {
+  async getServerInfo(): Promise<Server> {
     try {
       const info = await this.outlineVpn.getServer()
       return info
