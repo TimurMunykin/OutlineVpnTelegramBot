@@ -79,12 +79,17 @@ export class VpnController {
       // Получаем все ключи с Outline сервера
       const outlineKeys = await vpnService.listVpnKeys();
       
-      // Получаем все ключи из нашей БД
-      const dbKeys = await VpnKeyModel.findAll(1000); // Берем много, чтобы точно все получить
-      const dbKeyIds = new Set(dbKeys.map(key => key.outlineKeyId));
+      // Получаем все ключи из нашей БД, которые НЕ назначены конкретным пользователям
+      // (например, назначены админу как orphaned или вообще не имеют userId)
+      const dbKeys = await VpnKeyModel.findAll(1000);
+      const assignedKeyIds = new Set(
+        dbKeys
+          .filter(key => key.userId && key.userId !== 1) // Исключаем админа (id=1) и null userId
+          .map(key => key.outlineKeyId)
+      );
 
-      // Фильтруем неассоциированные ключи
-      const unassociatedKeys = outlineKeys.filter(key => !dbKeyIds.has(key.id));
+      // Фильтруем неассоциированные ключи (те, что есть на сервере, но не назначены пользователям)
+      const unassociatedKeys = outlineKeys.filter(key => !assignedKeyIds.has(key.id));
 
       res.json({
         keys: unassociatedKeys,
