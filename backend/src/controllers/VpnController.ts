@@ -352,4 +352,59 @@ export class VpnController {
       res.status(500).json({ error: 'Failed to reassign key' });
     }
   }
+
+  static async getKeysWithTraffic(req: Request, res: Response): Promise<void> {
+    try {
+      await VpnController.ensureSync(req);
+
+      if (req.user!.role === 'ADMIN') {
+        // Admin can see all users' keys with traffic info
+        const allKeys = await VpnKeyModel.findAll();
+        const keysWithTraffic = await VpnController.enrichKeysWithTraffic(allKeys);
+        res.json({ keys: keysWithTraffic });
+      } else {
+        // Regular user can only see their own keys with traffic info
+        const userKeys = await VpnKeyModel.findByUserId(req.user!.id);
+        const keysWithTraffic = await VpnController.enrichKeysWithTraffic(userKeys);
+        res.json({ keys: keysWithTraffic });
+      }
+    } catch (error) {
+      console.error('Error fetching keys with traffic:', error);
+      res.status(500).json({ error: 'Failed to fetch keys with traffic' });
+    }
+  }
+
+  private static async enrichKeysWithTraffic(keys: unknown[]): Promise<unknown[]> {
+    try {
+      // Get traffic stats and server info from Outline
+      const [trafficStats, serverInfo] = await Promise.all([
+        vpnService.getTrafficStats(),
+        vpnService.getServerInfo()
+      ]);
+
+      const defaultLimitBytes = serverInfo.accessKeyDataLimit?.bytes || null;
+
+      return Promise.all(keys.map(async (key: any) => {
+        // Get individual key limit
+        const keyLimit = await vpnService.getKeyDataLimit(key.outlineKeyId);
+        const limitBytes = keyLimit || defaultLimitBytes;
+        
+        // Get traffic usage
+        const trafficBytes = trafficStats.bytesTransferredByUserId?.[key.outlineKeyId] || 0;
+        
+        return {
+          ...key,
+          trafficUsageBytes: trafficBytes,
+          trafficLimitBytes: limitBytes,
+          trafficUsageMB: Math.round(trafficBytes / (1000 * 1000)),
+          trafficLimitMB: limitBytes ? Math.round(limitBytes / (1000 * 1000)) : null,
+          usagePercentage: limitBytes ? Math.min(100, (trafficBytes / limitBytes) * 100) : 0,
+          isOverLimit: limitBytes ? trafficBytes > limitBytes : false
+        };
+      }));
+    } catch (error) {
+      console.error('Error enriching keys with traffic:', error);
+      return keys;
+    }
+  }
 }

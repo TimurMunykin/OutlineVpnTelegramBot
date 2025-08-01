@@ -73,6 +73,8 @@ export const authApi = {
 export const vpnApi = {
   getKeys: () => api.get('/vpn/keys'),
   
+  getKeysWithTraffic: () => api.get('/vpn/keys-with-traffic'),
+  
   getUnassociatedKeys: () => api.get('/vpn/unassociated-keys'),
   
   createKey: (name?: string, vpnClientId?: number) => api.post('/vpn/keys', { name, vpnClientId }),

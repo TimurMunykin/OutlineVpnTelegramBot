@@ -20,9 +20,10 @@ import {
   Alert,
   Chip,
 } from '@mui/material'
-import { Add, Delete, ContentCopy, Info, Person, PersonAdd } from '@mui/icons-material'
+import { Add, Delete, ContentCopy, Info, Person, PersonAdd, Refresh } from '@mui/icons-material'
 import { vpnApi } from '../services/api'
 import { useAuthStore } from '@/stores/authStore'
+import TrafficUsageCard from '../components/TrafficUsageCard'
 
 interface VpnKey {
   id: number
@@ -42,6 +43,13 @@ interface VpnKey {
     phone?: string
     migrationStatus?: string
   }
+  // Traffic data fields
+  trafficUsageBytes?: number
+  trafficLimitBytes?: number | null
+  trafficUsageMB?: number
+  trafficLimitMB?: number | null
+  usagePercentage?: number
+  isOverLimit?: boolean
 }
 
 const VpnKeysPage: React.FC = () => {
@@ -59,17 +67,31 @@ const VpnKeysPage: React.FC = () => {
     canCreate: boolean
     reason?: string
   } | null>(null)
+  const [refreshingTraffic, setRefreshingTraffic] = useState(false)
 
   const fetchKeys = async () => {
     try {
       setLoading(true)
-      const response = await vpnApi.getKeys()
+      const response = await vpnApi.getKeysWithTraffic()
       setKeys(response.data.keys || [])
       setError(null)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch VPN keys')
+      setError(err.response?.data?.error || 'Failed to fetch VPN keys with traffic data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const refreshTrafficData = async () => {
+    try {
+      setRefreshingTraffic(true)
+      const response = await vpnApi.getKeysWithTraffic()
+      setKeys(response.data.keys || [])
+      setError(null)
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to refresh traffic data')
+    } finally {
+      setRefreshingTraffic(false)
     }
   }
 
@@ -165,15 +187,25 @@ const VpnKeysPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           VPN Keys
         </Typography>
-        {canCreateKeys && (
+        <Box display="flex" gap={1}>
           <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setCreateDialogOpen(true)}
+            variant="outlined"
+            startIcon={refreshingTraffic ? <CircularProgress size={16} /> : <Refresh />}
+            onClick={refreshTrafficData}
+            disabled={refreshingTraffic}
           >
-            Create Key
+            Refresh Traffic
           </Button>
-        )}
+          {canCreateKeys && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              Create Key
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {error && (
@@ -203,6 +235,7 @@ const VpnKeysPage: React.FC = () => {
                 <TableCell>Access URL</TableCell>
                 <TableCell>Owner</TableCell>
                 <TableCell>Type</TableCell>
+                <TableCell>Traffic Usage</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -303,6 +336,21 @@ const VpnKeysPage: React.FC = () => {
                         size="small"
                         variant="outlined"
                       />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {key.trafficUsageMB !== undefined ? (
+                      <TrafficUsageCard
+                        trafficUsageMB={key.trafficUsageMB}
+                        trafficLimitMB={key.trafficLimitMB}
+                        usagePercentage={key.usagePercentage || 0}
+                        isOverLimit={key.isOverLimit || false}
+                        compact
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Loading...
+                      </Typography>
                     )}
                   </TableCell>
                   <TableCell>

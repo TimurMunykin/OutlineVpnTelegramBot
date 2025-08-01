@@ -163,4 +163,18 @@ router.put('/keys/:id', authenticateToken, requireUser, VpnController.updateKey)
  */
 router.post('/keys/:outlineKeyId/reassign', authenticateToken, requireAdmin, VpnController.reassignKey);
 
+/**
+ * @swagger
+ * /api/vpn/keys-with-traffic:
+ *   get:
+ *     summary: Get VPN keys with traffic usage and limits
+ *     tags: [VPN]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of VPN keys with traffic information
+ */
+router.get('/keys-with-traffic', authenticateToken, requireUser, VpnController.getKeysWithTraffic);
+
 export default router;

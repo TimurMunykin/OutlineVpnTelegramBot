@@ -1,4 +1,4 @@
-import { OutlineVPN, AccessKey, Server } from 'outlinevpn-api'
+import { OutlineVPN, AccessKey, Server, DataUsagePerAccessKey } from 'outlinevpn-api'
 import { VpnKeyModel } from '../models/VpnKey'
 
 class VpnService {
@@ -100,6 +100,44 @@ class VpnService {
     } catch (error) {
       console.error('Error getting server info:', error)
       throw new Error('Could not get server info')
+    }
+  }
+
+  async getTrafficStats(): Promise<DataUsagePerAccessKey> {
+    try {
+      const stats = await this.outlineVpn.getDataUsage()
+      return stats
+    } catch (error) {
+      console.error('Error getting traffic stats:', error)
+      throw new Error('Could not get traffic stats')
+    }
+  }
+
+  async getKeyDataLimit(keyId: string): Promise<number | null> {
+    try {
+      const keyInfo = await this.getKeyInfo(keyId)
+      return keyInfo.dataLimit?.bytes || keyInfo.limit?.bytes || null
+    } catch (error) {
+      console.error(`Error getting data limit for key ${keyId}:`, error)
+      return null
+    }
+  }
+
+  async setKeyDataLimit(keyId: string, limitBytes: number): Promise<void> {
+    try {
+      await this.outlineVpn.addDataLimit(keyId, limitBytes)
+    } catch (error) {
+      console.error(`Error setting data limit for key ${keyId}:`, error)
+      throw error
+    }
+  }
+
+  async deleteKeyDataLimit(keyId: string): Promise<void> {
+    try {
+      await this.outlineVpn.deleteDataLimit(keyId)
+    } catch (error) {
+      console.error(`Error deleting data limit for key ${keyId}:`, error)
+      throw error
     }
   }
 }
