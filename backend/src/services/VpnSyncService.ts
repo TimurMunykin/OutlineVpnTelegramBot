@@ -82,19 +82,32 @@ export class VpnSyncService {
           // 4. Добавить новый ключ в БД
           const assignedUser = await this.determineKeyOwner(outlineKey);
           
-          console.log(`➕ Adding new key ${outlineKey.id} to DB, assigned to user ${assignedUser.id}`);
-          
-          await VpnKeyModel.create({
-            userId: assignedUser.id,
-            outlineKeyId: outlineKey.id,
-            accessUrl: outlineKey.accessUrl,
-            name: outlineKey.name || `Key ${outlineKey.id}`,
-          });
-          
-          if (assignedUser.id === 1) { // Если назначен админу как orphaned
-            orphaned++;
+          if (assignedUser) {
+            console.log(`➕ Adding new key ${outlineKey.id} to DB, assigned to user ${assignedUser.id}`);
+            
+            await VpnKeyModel.create({
+              userId: assignedUser.id,
+              outlineKeyId: outlineKey.id,
+              accessUrl: outlineKey.accessUrl,
+              name: outlineKey.name || `Key ${outlineKey.id}`,
+            });
+            
+            if (assignedUser.id === 1) { // Если назначен админу как orphaned
+              orphaned++;
+            } else {
+              added++;
+            }
           } else {
-            added++;
+            console.log(`➕ Adding new unassigned key ${outlineKey.id} to DB`);
+            
+            await VpnKeyModel.create({
+              userId: null,
+              outlineKeyId: outlineKey.id,
+              accessUrl: outlineKey.accessUrl,
+              name: outlineKey.name || `Key ${outlineKey.id}`,
+            });
+            
+            orphaned++;
           }
         }
       }
@@ -111,9 +124,9 @@ export class VpnSyncService {
 
   /**
    * Определяет кому назначить ключ из Outline сервера
-   * Пытается найти пользователя по имени ключа, иначе назначает админу
+   * Пытается найти пользователя по имени ключа, иначе оставляет неназначенным
    */
-  private async determineKeyOwner(outlineKey: any): Promise<{ id: number; email: string }> {
+  private async determineKeyOwner(outlineKey: any): Promise<{ id: number; email: string } | null> {
     // Стратегия 1: Поиск по имени ключа
     if (outlineKey.name) {
       // Попробовать найти пользователя по email в имени ключа
@@ -146,20 +159,9 @@ export class VpnSyncService {
       }
     }
 
-    // Стратегия 2: Назначить админу (по умолчанию)
-    const admin = await UserModel.findById(1);
-    if (admin) {
-      console.log(`👨‍💼 Assigning orphaned key to admin: ${admin.email}`);
-      return { id: admin.id, email: admin.email };
-    }
-
-    // Fallback: создать или найти любого пользователя
-    const anyUser = await UserModel.findAll(1, 0);
-    if (anyUser.length > 0) {
-      return { id: anyUser[0].id, email: anyUser[0].email };
-    }
-
-    throw new Error('No users found in database for key assignment');
+    // Стратегия 2: Оставить неназначенным (по умолчанию)
+    console.log(`🔓 Leaving key unassigned: ${outlineKey.name || outlineKey.id}`);
+    return null;
   }
 
   /**

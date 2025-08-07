@@ -353,14 +353,37 @@ export class VpnController {
     }
   }
 
-  static async getKeysWithTraffic(req: Request, res: Response): Promise<void> {
+  static async getKeysWithTraffic(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      await VpnController.ensureSync(req);
+      await VpnController.ensureSync();
 
       if (req.user!.role === 'ADMIN') {
         // Admin can see all users' keys with traffic info
         const allKeys = await VpnKeyModel.findAll();
-        const keysWithTraffic = await VpnController.enrichKeysWithTraffic(allKeys);
+        
+        // Enrich with user and client info for admin (same as in getKeys)
+        const keysWithUserInfo = await Promise.all(
+          allKeys.map(async (key) => {
+            const keyWithDetails = await VpnKeyModel.getKeyWithUser(key.id);
+            return {
+              ...key,
+              user: keyWithDetails?.user ? {
+                id: keyWithDetails.user.id,
+                name: keyWithDetails.user.name,
+                email: keyWithDetails.user.email,
+                role: keyWithDetails.user.role,
+              } : null,
+              vpnClient: keyWithDetails?.vpnClient ? {
+                id: keyWithDetails.vpnClient.id,
+                name: keyWithDetails.vpnClient.name,
+                phone: keyWithDetails.vpnClient.phone,
+                migrationStatus: keyWithDetails.vpnClient.migrationStatus,
+              } : null,
+            };
+          })
+        );
+        
+        const keysWithTraffic = await VpnController.enrichKeysWithTraffic(keysWithUserInfo);
         res.json({ keys: keysWithTraffic });
       } else {
         // Regular user can only see their own keys with traffic info
