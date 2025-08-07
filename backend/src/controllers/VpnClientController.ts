@@ -199,21 +199,36 @@ export class VpnClientController {
         return res.status(404).json({ error: 'VPN client not found' });
       }
 
-      // Проверяем, что у клиента нет активных VPN ключей
-      if (client._count && client._count.vpnKeys > 0) {
-        return res.status(400).json({
-          error: 'Cannot delete client with active VPN keys. Remove VPN keys first.',
+      // Переназначаем VPN ключи клиента как неназначенные (Unassigned)
+      const { VpnKeyModel } = await import('../models/VpnKey');
+      const { prisma } = await import('../utils/prisma');
+      
+      const clientKeys = await VpnKeyModel.findByVpnClientId(clientId);
+      
+      // В транзакции: переназначаем ключи и удаляем клиента
+      await prisma.$transaction(async (tx) => {
+        // Делаем все ключи VPN Client'а неназначенными
+        await tx.vpnKey.updateMany({
+          where: { vpnClientId: clientId },
+          data: { 
+            vpnClientId: null,
+            userId: null  // Делаем ключи полностью неназначенными
+          }
         });
-      }
-
-      await VpnClientModel.delete(clientId);
+        
+        // Удаляем VPN Client
+        await tx.vpnClient.delete({
+          where: { id: clientId }
+        });
+      });
 
       res.json({
-        message: 'VPN client deleted successfully',
+        message: `VPN client deleted successfully. ${clientKeys.length} keys are now unassigned.`,
         deletedClient: {
           id: client.id,
           name: client.name,
         },
+        unassignedKeys: clientKeys.length,
       });
     } catch (error) {
       console.error('Error deleting VPN client:', error);

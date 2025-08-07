@@ -184,7 +184,15 @@ const VpnClientsPage: React.FC = () => {
   }
 
   const handleDeleteClient = async (clientId: number, clientName: string) => {
-    if (!window.confirm(`Are you sure you want to delete VPN client "${clientName}"?`)) {
+    // Find the client to check VPN key count
+    const client = clients.find(c => c.id === clientId);
+    const keyCount = client?._count?.vpnKeys || 0;
+    
+    const confirmMessage = keyCount > 0 
+      ? `Are you sure you want to delete VPN client "${clientName}"?\n\n${keyCount} VPN key(s) will become unassigned but will continue to work.`
+      : `Are you sure you want to delete VPN client "${clientName}"?`;
+    
+    if (!window.confirm(confirmMessage)) {
       return
     }
 
@@ -440,11 +448,14 @@ const VpnClientsPage: React.FC = () => {
                       <Edit />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete client">
+                  <Tooltip title={
+                    client._count.vpnKeys > 0 
+                      ? `Delete client (${client._count.vpnKeys} keys will become unassigned)`
+                      : "Delete client"
+                  }>
                     <IconButton
                       color="error"
                       onClick={() => handleDeleteClient(client.id, client.name)}
-                      disabled={client._count.vpnKeys > 0}
                     >
                       <Delete />
                     </IconButton>

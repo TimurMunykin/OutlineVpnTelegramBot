@@ -258,15 +258,50 @@ export class UserController {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      await UserModel.deleteUser(userId);
+      // Удалить все VPN ключи пользователя
+      const { VpnKeyModel } = await import('../models/VpnKey');
+      const { vpnService } = await import('../services/vpnService');
+      const { prisma } = await import('../utils/prisma');
+      
+      const userKeys = await VpnKeyModel.findByUserId(userId);
+      
+      // Сначала удаляем ключи с Outline сервера
+      for (const key of userKeys) {
+        try {
+          await vpnService.removeVpnKey(key.outlineKeyId);
+          console.log(`🗑️ Deleted key ${key.outlineKeyId} from Outline server`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to delete key ${key.outlineKeyId} from Outline server:`, error);
+          // Продолжаем даже если не получилось удалить с сервера
+        }
+      }
+      
+      // Теперь удаляем пользователя и его данные в транзакции
+      await prisma.$transaction(async (tx) => {
+        // Удаляем VPN ключи из БД
+        await tx.vpnKey.deleteMany({
+          where: { userId: userId }
+        });
+        
+        // Удаляем сессии пользователя  
+        await tx.userSession.deleteMany({
+          where: { userId: userId }
+        });
+        
+        // Удаляем пользователя (CASCADE в БД должен удалить остальные связанные записи)
+        await tx.user.delete({
+          where: { id: userId }
+        });
+      });
 
       res.json({ 
-        message: 'User deleted successfully',
+        message: `User deleted successfully. Also deleted ${userKeys.length} VPN keys.`,
         deletedUser: {
           id: user.id,
           email: user.email,
           name: user.name,
         },
+        deletedKeys: userKeys.length,
       });
     } catch (error) {
       console.error('Error deleting user:', error);
