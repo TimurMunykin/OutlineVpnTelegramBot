@@ -24,6 +24,7 @@ import { Add, Delete, ContentCopy, Info, Person, PersonAdd, Refresh } from '@mui
 import { vpnApi } from '../services/api'
 import { useAuthStore } from '@/stores/authStore'
 import TrafficUsageCard from '../components/TrafficUsageCard'
+import { useTranslation } from 'react-i18next'
 
 interface VpnKey {
   id: number
@@ -54,6 +55,7 @@ interface VpnKey {
 
 const VpnKeysPage: React.FC = () => {
   const { user, token } = useAuthStore()
+  const { t } = useTranslation()
   const [keys, setKeys] = useState<VpnKey[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -76,7 +78,7 @@ const VpnKeysPage: React.FC = () => {
       setKeys(response.data.keys || [])
       setError(null)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch VPN keys with traffic data')
+      setError(err.response?.data?.error || t('errors.failedToLoadBillingData'))
     } finally {
       setLoading(false)
     }
@@ -89,7 +91,7 @@ const VpnKeysPage: React.FC = () => {
       setKeys(response.data.keys || [])
       setError(null)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to refresh traffic data')
+      setError(err.response?.data?.error || t('errors.serverError'))
     } finally {
       setRefreshingTraffic(false)
     }
@@ -137,14 +139,14 @@ const VpnKeysPage: React.FC = () => {
       await fetchKeys()
       await checkUserLimits() // Перепроверяем лимиты после создания ключа
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create VPN key')
+      setError(err.response?.data?.error || t('errors.serverError'))
     } finally {
       setCreating(false)
     }
   }
 
   const handleDeleteKey = async (keyId: number) => {
-    if (!window.confirm('Are you sure you want to delete this VPN key?')) {
+    if (!window.confirm(t('common.confirm') + '?')) {
       return
     }
 
@@ -153,7 +155,7 @@ const VpnKeysPage: React.FC = () => {
       await fetchKeys()
       await checkUserLimits() // Перепроверяем лимиты после удаления ключа
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete VPN key')
+      setError(err.response?.data?.error || t('errors.serverError'))
     }
   }
 
@@ -185,7 +187,7 @@ const VpnKeysPage: React.FC = () => {
         }}
       >
         <Typography variant="h4" component="h1">
-          VPN Keys
+          {t('vpnKeys.title')}
         </Typography>
         <Box display="flex" gap={1}>
           <Button
@@ -194,7 +196,7 @@ const VpnKeysPage: React.FC = () => {
             onClick={refreshTrafficData}
             disabled={refreshingTraffic}
           >
-            Refresh Traffic
+            {t('common.refresh')}
           </Button>
           {canCreateKeys && (
             <Button
@@ -202,7 +204,7 @@ const VpnKeysPage: React.FC = () => {
               startIcon={<Add />}
               onClick={() => setCreateDialogOpen(true)}
             >
-              Create Key
+              {t('vpnKeys.createKey')}
             </Button>
           )}
         </Box>
@@ -223,7 +225,7 @@ const VpnKeysPage: React.FC = () => {
       {keys.length === 0 ? (
         <Paper sx={{ p: 3 }}>
           <Typography variant="body1" color="text.secondary">
-            No VPN keys found. Click "Create Key" to generate your first VPN access key.
+            {t('vpnKeys.noKeysFound')}
           </Typography>
         </Paper>
       ) : (
@@ -231,17 +233,17 @@ const VpnKeysPage: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Access URL</TableCell>
+                <TableCell>{t('vpnKeys.keyName')}</TableCell>
+                <TableCell>{t('vpnKeys.accessUrl')}</TableCell>
                 {user?.role === 'ADMIN' && (
                   <>
-                    <TableCell>Owner</TableCell>
-                    <TableCell>Type</TableCell>
+                    <TableCell>{t('vpnKeys.owner')}</TableCell>
+                    <TableCell>{t('vpnKeys.type')}</TableCell>
                   </>
                 )}
-                <TableCell>Traffic Usage</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t('vpnKeys.trafficUsed')}</TableCell>
+                <TableCell>{t('vpnKeys.createdAt')}</TableCell>
+                <TableCell align="right">{t('vpnKeys.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -386,12 +388,12 @@ const VpnKeysPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Create New VPN Key</DialogTitle>
+        <DialogTitle>{t('vpnKeys.createKey')}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            label="Key Name (optional)"
+            label={t('vpnKeys.keyName') + ' (optional)'}
             fullWidth
             variant="outlined"
             value={newKeyName}
@@ -400,13 +402,13 @@ const VpnKeysPage: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setCreateDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button
             onClick={handleCreateKey}
             variant="contained"
             disabled={creating}
           >
-            {creating ? <CircularProgress size={20} /> : 'Create'}
+            {creating ? <CircularProgress size={20} /> : t('common.create')}
           </Button>
         </DialogActions>
       </Dialog>

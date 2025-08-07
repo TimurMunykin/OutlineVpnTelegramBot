@@ -25,6 +25,7 @@ interface UpdateUserRequest extends AuthenticatedRequest {
     role?: 'USER' | 'ADMIN';
     hasWebAccess?: boolean;
     migrationStatus?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+    preferredLanguage?: string;
   };
 }
 
@@ -163,7 +164,7 @@ export class UserController {
       }
 
       const userId = parseInt(req.params.id);
-      const { email, name, password, role, hasWebAccess, migrationStatus } = req.body;
+      const { email, name, password, role, hasWebAccess, migrationStatus, preferredLanguage } = req.body;
 
       // Пользователи могут редактировать только свой профиль, админы - любой
       if (req.user.role !== 'ADMIN' && req.user.id !== userId) {
@@ -196,6 +197,11 @@ export class UserController {
       const updates: any = {};
       if (email) updates.email = email;
       if (name) updates.name = name;
+      
+      // Пользователи могут менять свой язык
+      if (preferredLanguage !== undefined && ['en', 'ru'].includes(preferredLanguage)) {
+        updates.preferredLanguage = preferredLanguage;
+      }
       
       // Только админы могут менять роли, веб-доступ и статус миграции других пользователей
       if (req.user.role === 'ADMIN') {
@@ -345,6 +351,35 @@ export class UserController {
     } catch (error) {
       console.error('Error fetching user stats:', error);
       res.status(500).json({ error: 'Failed to fetch user statistics' });
+    }
+  }
+
+  static async updateLanguage(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const { preferredLanguage } = req.body;
+
+      if (!preferredLanguage || !['en', 'ru'].includes(preferredLanguage)) {
+        return res.status(400).json({ 
+          error: 'Valid language is required (en or ru)' 
+        });
+      }
+
+      await UserModel.updateUser(req.user.id, { preferredLanguage });
+
+      const updatedUser = await UserModel.findById(req.user.id);
+      const { passwordHash, ...userWithoutPassword } = updatedUser!;
+
+      res.json({
+        message: 'Language preference updated successfully',
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      console.error('Error updating language preference:', error);
+      res.status(500).json({ error: 'Failed to update language preference' });
     }
   }
 }

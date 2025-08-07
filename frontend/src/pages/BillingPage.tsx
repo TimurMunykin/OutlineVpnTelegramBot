@@ -6,6 +6,7 @@ import { BalanceManagementForm } from '../components/billing/BalanceManagementFo
 import { UsersTable } from '../components/billing/UsersTable';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { useTranslation } from 'react-i18next';
 
 interface BillingData {
   billing?: any;
@@ -19,6 +20,7 @@ interface BillingData {
 
 export const BillingPage: React.FC = () => {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -49,7 +51,7 @@ export const BillingPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error fetching billing data:', error);
-      setError(error?.response?.data?.error || 'Failed to load billing data');
+      setError(error?.response?.data?.error || t('errors.failedToLoadBillingData'));
     } finally {
       setLoading(false);
     }
@@ -142,7 +144,7 @@ export const BillingPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">
-          Failed to load billing data
+          {t('errors.failedToLoadBillingData')}
         </Alert>
       </Container>
     );
@@ -152,12 +154,12 @@ export const BillingPage: React.FC = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box mb={4}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {user?.role === 'ADMIN' ? 'Billing Management' : 'My Subscription'}
+          {user?.role === 'ADMIN' ? t('billing.title') : t('billing.userTitle')}
         </Typography>
         <Typography variant="body1" color="text.secondary">
           {user?.role === 'ADMIN' 
-            ? 'Manage user subscriptions and balances'
-            : 'View your subscription information and balance'
+            ? t('billing.subtitle')
+            : t('billing.userSubtitle')
           }
         </Typography>
       </Box>

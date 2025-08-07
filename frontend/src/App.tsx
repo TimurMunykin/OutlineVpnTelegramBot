@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box } from '@mui/material'
 import { useAuthStore } from '@/stores/authStore'
 import Layout from '@/components/Layout'
+import { useLanguageInit } from '@/hooks/useLanguageInit'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import DashboardPage from '@/pages/DashboardPage'
@@ -11,11 +12,13 @@ import VpnClientsPage from '@/pages/VpnClientsPage'
 import InvitesPage from '@/pages/InvitesPage'
 import InviteRegistrationPage from '@/pages/InviteRegistrationPage'
 import SettingsPage from '@/pages/SettingsPage'
-import OAuthAppsPage from '@/pages/OAuthAppsPage'
 import { BillingPage } from '@/pages/BillingPage'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
+  
+  // Инициализируем язык пользователя при загрузке
+  useLanguageInit()
 
   if (!isAuthenticated) {
     return (
@@ -40,7 +43,6 @@ function App() {
         <Route path="/invites" element={<InvitesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/billing" element={<BillingPage />} />
-        <Route path="/oauth-apps" element={<OAuthAppsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

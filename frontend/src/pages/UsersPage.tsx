@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material'
 import { useAuthStore } from '../stores/authStore'
 import { usersApi } from '../services/api'
+import { useTranslation } from 'react-i18next'
 
 interface User {
   id: number
@@ -55,6 +56,7 @@ interface User {
 
 const UsersPage: React.FC = () => {
   const { user } = useAuthStore()
+  const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,7 +80,7 @@ const UsersPage: React.FC = () => {
       setUsers(response.data.users || [])
       setError(null)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch users')
+      setError(err.response?.data?.error || t('errors.serverError'))
     } finally {
       setLoading(false)
     }
@@ -86,7 +88,7 @@ const UsersPage: React.FC = () => {
 
   const handleCreateUser = async () => {
     if (!formData.name || !formData.email || !formData.password) {
-      setError('All fields are required')
+      setError('Все поля обязательны')
       return
     }
 
@@ -106,7 +108,7 @@ const UsersPage: React.FC = () => {
       setFormData({ name: '', email: '', password: '', role: 'USER', hasWebAccess: true, migrationStatus: undefined })
       await fetchUsers()
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create user')
+      setError(err.response?.data?.error || t('errors.serverError'))
     } finally {
       setSubmitting(false)
     }
@@ -114,7 +116,7 @@ const UsersPage: React.FC = () => {
 
   const handleEditUser = async () => {
     if (!editingUser || !formData.name || !formData.email) {
-      setError('Name and email are required')
+      setError('Имя и email обязательны')
       return
     }
 

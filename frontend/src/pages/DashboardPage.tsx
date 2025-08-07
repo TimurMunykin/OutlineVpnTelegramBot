@@ -26,13 +26,13 @@ import {
   Timeline,
 } from '@mui/icons-material'
 import { useAuthStore } from '../stores/authStore'
-import { vpnApi, usersApi, oauthApi } from '../services/api'
+import { vpnApi, usersApi } from '../services/api'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardStats {
   vpnKeys: number;
   users: number;
-  oauthApps: number;
   activeSessions: number;
 }
 
@@ -47,12 +47,12 @@ interface RecentActivity {
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats>({
     vpnKeys: 0,
     users: 0,
-    oauthApps: 0,
     activeSessions: 0,
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
@@ -65,19 +65,16 @@ const DashboardPage: React.FC = () => {
       const promises = [
         vpnApi.getKeys(),
         ...(user?.role === 'ADMIN' ? [usersApi.getUsers()] : []),
-        oauthApi.getApps(),
       ]
 
       const results = await Promise.allSettled(promises)
       
       const vpnKeysResult = results[0]
       const usersResult = user?.role === 'ADMIN' ? results[1] : null
-      const oauthResult = results[user?.role === 'ADMIN' ? 2 : 1]
 
       const newStats: DashboardStats = {
         vpnKeys: vpnKeysResult.status === 'fulfilled' ? vpnKeysResult.value.data.keys?.length || 0 : 0,
         users: usersResult && usersResult.status === 'fulfilled' ? usersResult.value.data.length || 0 : 0,
-        oauthApps: oauthResult.status === 'fulfilled' ? oauthResult.value.data.length || 0 : 0,
         activeSessions: 1, // TODO: implement real session tracking
       }
 
@@ -113,28 +110,21 @@ const DashboardPage: React.FC = () => {
 
   const statsConfig = [
     {
-      title: 'VPN Keys',
+      title: t('dashboard.stats.totalKeys'),
       value: stats.vpnKeys.toString(),
       icon: <VpnKey sx={{ fontSize: 40 }} />,
       color: '#1976d2',
       action: () => navigate('/vpn-keys'),
     },
     ...(user?.role === 'ADMIN' ? [{
-      title: 'Users',
+      title: t('dashboard.stats.totalUsers'),
       value: stats.users.toString(),
       icon: <People sx={{ fontSize: 40 }} />,
       color: '#388e3c',
       action: () => navigate('/users'),
     }] : []),
     {
-      title: 'OAuth Apps',
-      value: stats.oauthApps.toString(),
-      icon: <Apps sx={{ fontSize: 40 }} />,
-      color: '#f57c00',
-      action: () => navigate('/oauth-apps'),
-    },
-    {
-      title: 'Active Sessions',
+      title: t('dashboard.stats.activeSessions'),
       value: stats.activeSessions.toString(),
       icon: <Security sx={{ fontSize: 40 }} />,
       color: '#7b1fa2',
@@ -155,10 +145,10 @@ const DashboardPage: React.FC = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Dashboard
+            {t('dashboard.title')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Welcome back, {user?.name}! {user?.role === 'ADMIN' && <Chip label="Admin" color="primary" size="small" />}
+            {t('dashboard.welcome', { name: user?.name })} {user?.role === 'ADMIN' && <Chip label="Admin" color="primary" size="small" />}
           </Typography>
         </Box>
         <Button
@@ -167,7 +157,7 @@ const DashboardPage: React.FC = () => {
           onClick={fetchDashboardData}
           disabled={loading}
         >
-          Refresh
+          {t('common.refresh')}
         </Button>
       </Box>
 
@@ -222,7 +212,7 @@ const DashboardPage: React.FC = () => {
           <Paper sx={{ p: 3 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
-                Recent Activity
+                {t('dashboard.recentActivity')}
               </Typography>
               <Chip icon={<Timeline />} label={`${recentActivity.length} items`} size="small" />
             </Box>
@@ -254,7 +244,7 @@ const DashboardPage: React.FC = () => {
               </List>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                No recent activity to display.
+                {t('dashboard.noRecentActivity')}
               </Typography>
             )}
           </Paper>
@@ -262,7 +252,7 @@ const DashboardPage: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Quick Actions
+              {t('dashboard.quickActions')}
             </Typography>
             <Box display="flex" flexDirection="column" gap={1}>
               <Button
@@ -271,15 +261,7 @@ const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/vpn-keys')}
                 fullWidth
               >
-                Create VPN Key
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Apps />}
-                onClick={() => navigate('/oauth-apps')}
-                fullWidth
-              >
-                Manage OAuth Apps
+                {t('dashboard.createVpnKey')}
               </Button>
               {user?.role === 'ADMIN' && (
                 <Button
@@ -288,7 +270,7 @@ const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/users')}
                   fullWidth
                 >
-                  Add New User
+                  {t('dashboard.addNewUser')}
                 </Button>
               )}
             </Box>

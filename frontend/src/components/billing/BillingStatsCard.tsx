@@ -9,6 +9,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { PlayArrow as PlayIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface BillingStats {
   totalUsers: number;
@@ -36,11 +37,12 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
   onRefresh,
   isProcessing,
 }) => {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6">Billing Statistics</Typography>
+          <Typography variant="h6">{t('billing.billingStatistics')}</Typography>
           <Box display="flex" gap={1}>
             <Button
               variant="contained"
@@ -49,14 +51,14 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
               onClick={onProcessBilling}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Run Billing'}
+              {isProcessing ? t('common.loading') : t('billing.processBilling')}
             </Button>
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
               onClick={onRefresh}
             >
-              Refresh
+              {t('common.refresh')}
             </Button>
           </Box>
         </Box>
@@ -68,7 +70,7 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
                 {stats.totalUsers}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Total Users
+                {t('billing.stats.totalUsers')}
               </Typography>
             </Box>
           </Grid>
@@ -78,7 +80,7 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
                 {stats.paidUsers}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Paid Users
+                {t('billing.stats.paidUsers')}
               </Typography>
             </Box>
           </Grid>
@@ -88,7 +90,7 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
                 {stats.blockedUsers}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Blocked Users
+                {t('billing.stats.blockedUsers')}
               </Typography>
             </Box>
           </Grid>
@@ -98,7 +100,7 @@ export const BillingStatsCard: React.FC<BillingStatsCardProps> = ({
                 {stats.totalBalance}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Total Balance ({currencyName})
+                {t('billing.stats.totalBalance')} ({currencyName})
               </Typography>
             </Box>
           </Grid>

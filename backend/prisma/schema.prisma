@@ -19,6 +19,7 @@ model User {
   isEmailVerified   Boolean          @default(false) @map("is_email_verified")
   hasWebAccess      Boolean          @default(true) @map("has_web_access")
   migrationStatus   MigrationStatus? @map("migration_status")
+  preferredLanguage String           @default("ru") @map("preferred_language")
   
   // Billing fields
   subscriptionType    SubscriptionType @default(FREE) @map("subscription_type")

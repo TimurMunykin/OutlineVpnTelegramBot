@@ -48,6 +48,30 @@ router.get('/stats', authenticateToken, requireAdmin, UserController.getUserStat
 
 /**
  * @swagger
+ * /api/users/language:
+ *   put:
+ *     summary: Update user's language preference
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               preferredLanguage:
+ *                 type: string
+ *                 enum: [en, ru]
+ *     responses:
+ *       200:
+ *         description: Language preference updated successfully
+ */
+router.put('/language', authenticateToken, UserController.updateLanguage);
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     summary: Get user by ID

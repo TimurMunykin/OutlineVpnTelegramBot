@@ -32,6 +32,8 @@ import {
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { LanguageToggle } from './LanguageToggle'
+import { useTranslation } from 'react-i18next'
 
 const drawerWidth = 240
 
@@ -45,6 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuthStore()
+  const { t } = useTranslation()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -64,16 +67,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/' },
-    { text: 'VPN Keys', icon: <VpnKey />, path: '/vpn-keys' },
-    { text: 'Billing', icon: <AccountBalance />, path: '/billing' },
+    { text: t('nav.dashboard'), icon: <Dashboard />, path: '/' },
+    { text: t('nav.vpnKeys'), icon: <VpnKey />, path: '/vpn-keys' },
+    { text: t('nav.billing'), icon: <AccountBalance />, path: '/billing' },
     ...(user?.role === 'ADMIN' ? [
-      { text: 'Users', icon: <People />, path: '/users' },
-      { text: 'VPN Clients', icon: <PersonAdd />, path: '/vpn-clients' },
-      { text: 'Invites', icon: <LinkIcon />, path: '/invites' },
-      { text: 'Settings', icon: <Settings />, path: '/settings' },
+      { text: t('nav.users'), icon: <People />, path: '/users' },
+      { text: t('nav.vpnClients'), icon: <PersonAdd />, path: '/vpn-clients' },
+      { text: t('nav.invites'), icon: <LinkIcon />, path: '/invites' },
+      { text: t('nav.settings'), icon: <Settings />, path: '/settings' },
     ] : []),
-    { text: 'OAuth Apps', icon: <Apps />, path: '/oauth-apps' },
   ]
 
   const drawer = (
@@ -122,7 +124,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {menuItems.find(item => item.path === location.pathname)?.text || 'VPN Manager'}
           </Typography>
-          <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <LanguageToggle />
             <Button
               color="inherit"
               onClick={handleMenuClick}
@@ -145,7 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ListItemIcon>
                   <Logout fontSize="small" />
                 </ListItemIcon>
-                Logout
+                {t('nav.logout')}
               </MenuItem>
             </Menu>
           </Box>

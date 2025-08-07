@@ -7,6 +7,7 @@ export interface User {
   name: string
   role: 'ADMIN' | 'USER'
   isEmailVerified: boolean
+  preferredLanguage: string
   createdAt: string
   updatedAt: string
 }
