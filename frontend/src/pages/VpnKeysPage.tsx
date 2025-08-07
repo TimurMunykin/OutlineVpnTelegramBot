@@ -233,8 +233,12 @@ const VpnKeysPage: React.FC = () => {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Access URL</TableCell>
-                <TableCell>Owner</TableCell>
-                <TableCell>Type</TableCell>
+                {user?.role === 'ADMIN' && (
+                  <>
+                    <TableCell>Owner</TableCell>
+                    <TableCell>Type</TableCell>
+                  </>
+                )}
                 <TableCell>Traffic Usage</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -269,75 +273,79 @@ const VpnKeysPage: React.FC = () => {
                       </IconButton>
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    {key.user ? (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Person fontSize="small" color="primary" />
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {key.user.name}
+                  {user?.role === 'ADMIN' && (
+                    <>
+                      <TableCell>
+                        {key.user ? (
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Person fontSize="small" color="primary" />
+                            <Box>
+                              <Typography variant="body2" fontWeight="medium">
+                                {key.user.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {key.user.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ) : key.vpnClient ? (
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <PersonAdd fontSize="small" color="secondary" />
+                            <Box>
+                              <Typography variant="body2" fontWeight="medium">
+                                {key.vpnClient.name}
+                              </Typography>
+                              {key.vpnClient.phone && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {key.vpnClient.phone}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Unassigned
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {key.user.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ) : key.vpnClient ? (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <PersonAdd fontSize="small" color="secondary" />
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {key.vpnClient.name}
-                          </Typography>
-                          {key.vpnClient.phone && (
-                            <Typography variant="caption" color="text.secondary">
-                              {key.vpnClient.phone}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        Unassigned
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {key.user ? (
-                      <Chip
-                        label={`Web User (${key.user.role})`}
-                        color="primary"
-                        size="small"
-                        variant="outlined"
-                      />
-                    ) : key.vpnClient ? (
-                      <Box display="flex" gap={0.5} flexWrap="wrap">
-                        <Chip
-                          label="VPN Client"
-                          color="secondary"
-                          size="small"
-                          variant="outlined"
-                        />
-                        {key.vpnClient.migrationStatus && (
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {key.user ? (
                           <Chip
-                            label={key.vpnClient.migrationStatus}
-                            color={
-                              key.vpnClient.migrationStatus === 'COMPLETED' ? 'success' :
-                              key.vpnClient.migrationStatus === 'IN_PROGRESS' ? 'warning' : 'default'
-                            }
+                            label={`Web User (${key.user.role})`}
+                            color="primary"
                             size="small"
+                            variant="outlined"
+                          />
+                        ) : key.vpnClient ? (
+                          <Box display="flex" gap={0.5} flexWrap="wrap">
+                            <Chip
+                              label="VPN Client"
+                              color="secondary"
+                              size="small"
+                              variant="outlined"
+                            />
+                            {key.vpnClient.migrationStatus && (
+                              <Chip
+                                label={key.vpnClient.migrationStatus}
+                                color={
+                                  key.vpnClient.migrationStatus === 'COMPLETED' ? 'success' :
+                                  key.vpnClient.migrationStatus === 'IN_PROGRESS' ? 'warning' : 'default'
+                                }
+                                size="small"
+                              />
+                            )}
+                          </Box>
+                        ) : (
+                          <Chip
+                            label="Unassigned"
+                            color="default"
+                            size="small"
+                            variant="outlined"
                           />
                         )}
-                      </Box>
-                    ) : (
-                      <Chip
-                        label="Unassigned"
-                        color="default"
-                        size="small"
-                        variant="outlined"
-                      />
-                    )}
-                  </TableCell>
+                      </TableCell>
+                    </>
+                  )}
                   <TableCell>
                     {key.trafficUsageMB !== undefined ? (
                       <TrafficUsageCard
