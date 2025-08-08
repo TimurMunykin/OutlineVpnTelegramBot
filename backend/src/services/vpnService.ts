@@ -18,7 +18,7 @@ class VpnService {
     });
   }
 
-  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: unknown }> {
+  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: any }> {
     try {
       const key = await this.outlineVpn.createAccessKey({ name })
       
@@ -48,7 +48,7 @@ class VpnService {
     try {
       const response = await this.outlineVpn.getAccessKeys();
       // In API v3, response has structure { accessKeys: [...] }
-      const keys: AccessKey[] = response.accessKeys || [];
+      const keys: AccessKey[] = (response as any).accessKeys || [];
       
       return keys.map((key: AccessKey) => ({
         id: key.id,
@@ -116,7 +116,7 @@ class VpnService {
   async getKeyDataLimit(keyId: string): Promise<number | null> {
     try {
       const keyInfo = await this.getKeyInfo(keyId)
-      return keyInfo.dataLimit?.bytes || keyInfo.limit?.bytes || null
+      return (keyInfo as any).dataLimit?.bytes || (keyInfo as any).limit?.bytes || null
     } catch (error) {
       console.error(`Error getting data limit for key ${keyId}:`, error)
       return null

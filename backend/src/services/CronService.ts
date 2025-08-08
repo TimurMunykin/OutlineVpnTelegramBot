@@ -1,4 +1,4 @@
-import cron from 'node-cron'
+import * as cron from 'node-cron'
 import { billingService } from './BillingService'
 
 export class CronService {
@@ -34,7 +34,6 @@ export class CronService {
         console.error(`[${new Date().toISOString()}] Billing process failed:`, error)
       }
     }, {
-      scheduled: false,
       timezone: 'Europe/Moscow' // Adjust timezone as needed
     })
 

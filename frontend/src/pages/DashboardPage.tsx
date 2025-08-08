@@ -18,7 +18,6 @@ import {
 import {
   VpnKey,
   People,
-  Apps,
   Security,
   Add,
   Refresh,

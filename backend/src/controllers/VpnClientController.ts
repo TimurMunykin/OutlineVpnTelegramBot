@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { VpnClientModel } from '../models/VpnClient';
-import { AuthenticatedRequest } from '../middleware/auth';
 
-interface CreateVpnClientRequest extends AuthenticatedRequest {
+interface CreateVpnClientRequest extends Request {
   body: {
     name: string;
     phone?: string;
@@ -13,7 +12,7 @@ interface CreateVpnClientRequest extends AuthenticatedRequest {
   };
 }
 
-interface UpdateVpnClientRequest extends AuthenticatedRequest {
+interface UpdateVpnClientRequest extends Request {
   params: {
     id: string;
   };
@@ -26,14 +25,14 @@ interface UpdateVpnClientRequest extends AuthenticatedRequest {
   };
 }
 
-interface VpnClientParamsRequest extends AuthenticatedRequest {
+interface VpnClientParamsRequest extends Request {
   params: {
     id: string;
   };
 }
 
 export class VpnClientController {
-  static async getVpnClients(req: AuthenticatedRequest, res: Response) {
+  static async getVpnClients(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -46,16 +45,16 @@ export class VpnClientController {
 
       const clients = await VpnClientModel.findAll();
 
-      res.json({
+      return res.json({
         clients,
       });
     } catch (error) {
       console.error('Error fetching VPN clients:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async getVpnClient(req: VpnClientParamsRequest, res: Response) {
+  static async getVpnClient(req: VpnClientParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -73,16 +72,16 @@ export class VpnClientController {
         return res.status(404).json({ error: 'VPN client not found' });
       }
 
-      res.json({
+      return res.json({
         client,
       });
     } catch (error) {
       console.error('Error fetching VPN client:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async createVpnClient(req: CreateVpnClientRequest, res: Response) {
+  static async createVpnClient(req: CreateVpnClientRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -132,17 +131,17 @@ export class VpnClientController {
         }
       }
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'VPN client created successfully',
         client,
       });
     } catch (error) {
       console.error('Error creating VPN client:', error);
-      res.status(500).json({ error: 'Failed to create VPN client' });
+      return res.status(500).json({ error: 'Failed to create VPN client' });
     }
   }
 
-  static async updateVpnClient(req: UpdateVpnClientRequest, res: Response) {
+  static async updateVpnClient(req: UpdateVpnClientRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -171,17 +170,17 @@ export class VpnClientController {
 
       const updatedClient = await VpnClientModel.update(clientId, updates);
 
-      res.json({
+      return res.json({
         message: 'VPN client updated successfully',
         client: updatedClient,
       });
     } catch (error) {
       console.error('Error updating VPN client:', error);
-      res.status(500).json({ error: 'Failed to update VPN client' });
+      return res.status(500).json({ error: 'Failed to update VPN client' });
     }
   }
 
-  static async deleteVpnClient(req: VpnClientParamsRequest, res: Response) {
+  static async deleteVpnClient(req: VpnClientParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -222,7 +221,7 @@ export class VpnClientController {
         });
       });
 
-      res.json({
+      return res.json({
         message: `VPN client deleted successfully. ${clientKeys.length} keys are now unassigned.`,
         deletedClient: {
           id: client.id,
@@ -232,11 +231,11 @@ export class VpnClientController {
       });
     } catch (error) {
       console.error('Error deleting VPN client:', error);
-      res.status(500).json({ error: 'Failed to delete VPN client' });
+      return res.status(500).json({ error: 'Failed to delete VPN client' });
     }
   }
 
-  static async getVpnClientStats(req: AuthenticatedRequest, res: Response) {
+  static async getVpnClientStats(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -249,12 +248,12 @@ export class VpnClientController {
 
       const stats = await VpnClientModel.getStats();
 
-      res.json({
+      return res.json({
         stats,
       });
     } catch (error) {
       console.error('Error fetching VPN client stats:', error);
-      res.status(500).json({ error: 'Failed to fetch VPN client statistics' });
+      return res.status(500).json({ error: 'Failed to fetch VPN client statistics' });
     }
   }
 }

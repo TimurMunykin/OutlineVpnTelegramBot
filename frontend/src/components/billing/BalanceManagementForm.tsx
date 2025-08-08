@@ -112,7 +112,7 @@ export const BalanceManagementForm: React.FC<BalanceManagementFormProps> = ({
         </Typography>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
             <Tab label="Add Balance" />
             <Tab label="Set Balance" />
             <Tab label="Deduct Balance" />

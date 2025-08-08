@@ -1,11 +1,17 @@
 import { prisma } from '../utils/prisma'
-import { InviteToken } from '@prisma/client'
+import { InviteToken, VpnClient, VpnKey } from '@prisma/client'
 import { randomBytes } from 'crypto'
 
 export interface ICreateInviteToken {
   vpnClientId: number
   email?: string
   expiresInDays?: number
+}
+
+export type InviteTokenWithVpnClient = InviteToken & {
+  vpnClient: VpnClient & {
+    vpnKeys: VpnKey[]
+  }
 }
 
 export class InviteTokenModel {
@@ -26,7 +32,7 @@ export class InviteTokenModel {
     })
   }
 
-  static async findByToken(token: string): Promise<InviteToken | null> {
+  static async findByToken(token: string): Promise<InviteTokenWithVpnClient | null> {
     return prisma.inviteToken.findUnique({
       where: { token },
       include: {

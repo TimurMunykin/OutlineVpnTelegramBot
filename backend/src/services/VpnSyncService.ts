@@ -101,7 +101,7 @@ export class VpnSyncService {
             console.log(`➕ Adding new unassigned key ${outlineKey.id} to DB`);
             
             await VpnKeyModel.create({
-              userId: null,
+              userId: undefined,
               outlineKeyId: outlineKey.id,
               accessUrl: outlineKey.accessUrl,
               name: outlineKey.name || `Key ${outlineKey.id}`,
@@ -146,8 +146,8 @@ export class VpnSyncService {
       
       for (const user of users) {
         const userNameWords = user.name.toLowerCase().split(/[\s\-_]+/);
-        const hasMatch = nameWords.some(word => 
-          userNameWords.some(userWord => 
+        const hasMatch = nameWords.some((word: string) => 
+          userNameWords.some((userWord: string) => 
             word.includes(userWord) || userWord.includes(word)
           )
         );

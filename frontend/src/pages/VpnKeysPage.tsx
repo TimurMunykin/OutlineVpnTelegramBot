@@ -20,7 +20,7 @@ import {
   Alert,
   Chip,
 } from '@mui/material'
-import { Add, Delete, ContentCopy, Info, Person, PersonAdd, Refresh } from '@mui/icons-material'
+import { Add, Delete, ContentCopy, Person, PersonAdd, Refresh } from '@mui/icons-material'
 import { vpnApi } from '../services/api'
 import { useAuthStore } from '@/stores/authStore'
 import TrafficUsageCard from '../components/TrafficUsageCard'
@@ -352,7 +352,7 @@ const VpnKeysPage: React.FC = () => {
                     {key.trafficUsageMB !== undefined ? (
                       <TrafficUsageCard
                         trafficUsageMB={key.trafficUsageMB}
-                        trafficLimitMB={key.trafficLimitMB}
+                        trafficLimitMB={key.trafficLimitMB || null}
                         usagePercentage={key.usagePercentage || 0}
                         isOverLimit={key.isOverLimit || false}
                         compact

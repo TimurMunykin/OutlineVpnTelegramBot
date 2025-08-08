@@ -22,7 +22,6 @@ import {
   Dashboard,
   VpnKey,
   People,
-  Apps,
   AccountCircle,
   Logout,
   PersonAdd,

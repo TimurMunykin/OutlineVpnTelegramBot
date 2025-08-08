@@ -2,10 +2,9 @@ import { Request, Response } from 'express';
 import { InviteTokenModel } from '../models/InviteToken';
 import { VpnClientModel } from '../models/VpnClient';
 import { UserModel } from '../models/User';
-import { AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 
-interface CreateInviteRequest extends AuthenticatedRequest {
+interface CreateInviteRequest extends Request {
   body: {
     vpnClientId: number;
     email?: string;
@@ -29,7 +28,7 @@ interface ValidateInviteRequest extends Request {
 }
 
 export class InviteController {
-  static async createInvite(req: CreateInviteRequest, res: Response) {
+  static async createInvite(req: CreateInviteRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -67,7 +66,7 @@ export class InviteController {
         expiresInDays,
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'Invite created successfully',
         invite: {
           id: invite.id,
@@ -79,11 +78,11 @@ export class InviteController {
       });
     } catch (error) {
       console.error('Error creating invite:', error);
-      res.status(500).json({ error: 'Failed to create invite' });
+      return res.status(500).json({ error: 'Failed to create invite' });
     }
   }
 
-  static async validateInvite(req: ValidateInviteRequest, res: Response) {
+  static async validateInvite(req: ValidateInviteRequest, res: Response): Promise<Response> {
     try {
       const { token } = req.params;
 
@@ -100,7 +99,7 @@ export class InviteController {
         return res.status(400).json({ error: 'Invite has expired' });
       }
 
-      res.json({
+      return res.json({
         valid: true,
         invite: {
           id: invite.id,
@@ -115,11 +114,11 @@ export class InviteController {
       });
     } catch (error) {
       console.error('Error validating invite:', error);
-      res.status(500).json({ error: 'Failed to validate invite' });
+      return res.status(500).json({ error: 'Failed to validate invite' });
     }
   }
 
-  static async useInvite(req: UseInviteRequest, res: Response) {
+  static async useInvite(req: UseInviteRequest, res: Response): Promise<Response> {
     try {
       const { token, email, name, password } = req.body;
 
@@ -189,17 +188,17 @@ export class InviteController {
 
       const { password: _, passwordHash: __, ...userWithoutPassword } = result;
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'Registration completed successfully. Your VPN access has been migrated to your account.',
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Error using invite:', error);
-      res.status(500).json({ error: 'Failed to complete registration' });
+      return res.status(500).json({ error: 'Failed to complete registration' });
     }
   }
 
-  static async getInvites(req: AuthenticatedRequest, res: Response) {
+  static async getInvites(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -229,16 +228,16 @@ export class InviteController {
         },
       });
 
-      res.json({
+      return res.json({
         invites,
       });
     } catch (error) {
       console.error('Error fetching invites:', error);
-      res.status(500).json({ error: 'Failed to fetch invites' });
+      return res.status(500).json({ error: 'Failed to fetch invites' });
     }
   }
 
-  static async deleteInvite(req: AuthenticatedRequest, res: Response) {
+  static async deleteInvite(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -264,16 +263,16 @@ export class InviteController {
 
       await InviteTokenModel.delete(id);
 
-      res.json({
+      return res.json({
         message: 'Invite deleted successfully',
       });
     } catch (error) {
       console.error('Error deleting invite:', error);
-      res.status(500).json({ error: 'Failed to delete invite' });
+      return res.status(500).json({ error: 'Failed to delete invite' });
     }
   }
 
-  static async getInviteStats(req: AuthenticatedRequest, res: Response) {
+  static async getInviteStats(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -286,12 +285,12 @@ export class InviteController {
 
       const stats = await InviteTokenModel.getStats();
 
-      res.json({
+      return res.json({
         stats,
       });
     } catch (error) {
       console.error('Error fetching invite stats:', error);
-      res.status(500).json({ error: 'Failed to fetch invite statistics' });
+      return res.status(500).json({ error: 'Failed to fetch invite statistics' });
     }
   }
 }

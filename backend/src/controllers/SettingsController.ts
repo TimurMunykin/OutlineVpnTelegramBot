@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { SettingModel } from '../models/Setting';
 import { UserLimitModel } from '../models/UserLimit';
-import { AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 
-interface UpdateSettingRequest extends AuthenticatedRequest {
+interface UpdateSettingRequest extends Request {
   body: {
     key: string;
     value: string;
@@ -12,7 +11,7 @@ interface UpdateSettingRequest extends AuthenticatedRequest {
   };
 }
 
-interface UpdateUserLimitRequest extends AuthenticatedRequest {
+interface UpdateUserLimitRequest extends Request {
   params: {
     userId: string;
   };
@@ -24,7 +23,7 @@ interface UpdateUserLimitRequest extends AuthenticatedRequest {
 }
 
 export class SettingsController {
-  static async getSettings(req: AuthenticatedRequest, res: Response) {
+  static async getSettings(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -37,16 +36,16 @@ export class SettingsController {
 
       const settings = await SettingModel.getAll();
 
-      res.json({
+      return res.json({
         settings,
       });
     } catch (error) {
       console.error('Error fetching settings:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async updateSetting(req: UpdateSettingRequest, res: Response) {
+  static async updateSetting(req: UpdateSettingRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -67,17 +66,17 @@ export class SettingsController {
 
       const setting = await SettingModel.set(key, value, description);
 
-      res.json({
+      return res.json({
         message: 'Setting updated successfully',
         setting,
       });
     } catch (error) {
       console.error('Error updating setting:', error);
-      res.status(500).json({ error: 'Failed to update setting' });
+      return res.status(500).json({ error: 'Failed to update setting' });
     }
   }
 
-  static async getUserLimits(req: AuthenticatedRequest, res: Response) {
+  static async getUserLimits(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -90,16 +89,16 @@ export class SettingsController {
 
       const usersWithLimits = await UserLimitModel.getUsersWithLimits();
 
-      res.json({
+      return res.json({
         users: usersWithLimits,
       });
     } catch (error) {
       console.error('Error fetching user limits:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async updateUserLimit(req: UpdateUserLimitRequest, res: Response) {
+  static async updateUserLimit(req: UpdateUserLimitRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -129,17 +128,17 @@ export class SettingsController {
         notes,
       });
 
-      res.json({
+      return res.json({
         message: 'User limit updated successfully',
         userLimit,
       });
     } catch (error) {
       console.error('Error updating user limit:', error);
-      res.status(500).json({ error: 'Failed to update user limit' });
+      return res.status(500).json({ error: 'Failed to update user limit' });
     }
   }
 
-  static async deleteUserLimit(req: AuthenticatedRequest, res: Response) {
+  static async deleteUserLimit(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -158,16 +157,16 @@ export class SettingsController {
 
       await UserLimitModel.delete(userId);
 
-      res.json({
+      return res.json({
         message: 'User limit removed successfully. User will use global defaults.',
       });
     } catch (error) {
       console.error('Error deleting user limit:', error);
-      res.status(500).json({ error: 'Failed to delete user limit' });
+      return res.status(500).json({ error: 'Failed to delete user limit' });
     }
   }
 
-  static async initializeSettings(req: AuthenticatedRequest, res: Response) {
+  static async initializeSettings(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -180,12 +179,12 @@ export class SettingsController {
 
       await SettingModel.initializeDefaults();
 
-      res.json({
+      return res.json({
         message: 'Default settings initialized successfully',
       });
     } catch (error) {
       console.error('Error initializing settings:', error);
-      res.status(500).json({ error: 'Failed to initialize settings' });
+      return res.status(500).json({ error: 'Failed to initialize settings' });
     }
   }
 }

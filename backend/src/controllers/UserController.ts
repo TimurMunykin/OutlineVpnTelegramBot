@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/User';
-import { AuthenticatedRequest } from '../middleware/auth';
 import bcrypt from 'bcrypt';
 
-interface CreateUserRequest extends AuthenticatedRequest {
+interface CreateUserRequest extends Request {
   body: {
     email: string;
     name: string;
@@ -14,7 +13,7 @@ interface CreateUserRequest extends AuthenticatedRequest {
   };
 }
 
-interface UpdateUserRequest extends AuthenticatedRequest {
+interface UpdateUserRequest extends Request {
   params: {
     id: string;
   };
@@ -29,14 +28,14 @@ interface UpdateUserRequest extends AuthenticatedRequest {
   };
 }
 
-interface UserParamsRequest extends AuthenticatedRequest {
+interface UserParamsRequest extends Request {
   params: {
     id: string;
   };
 }
 
 export class UserController {
-  static async getUsers(req: AuthenticatedRequest, res: Response) {
+  static async getUsers(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -55,16 +54,16 @@ export class UserController {
         return userWithoutPassword;
       });
 
-      res.json({
+      return res.json({
         users: usersWithoutPasswords,
       });
     } catch (error) {
       console.error('Error fetching users:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async getUser(req: UserParamsRequest, res: Response) {
+  static async getUser(req: UserParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -86,16 +85,16 @@ export class UserController {
       // Убираем пароль из ответа
       const { passwordHash, ...userWithoutPassword } = user;
 
-      res.json({
+      return res.json({
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Error fetching user:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async createUser(req: CreateUserRequest, res: Response) {
+  static async createUser(req: CreateUserRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -147,17 +146,17 @@ export class UserController {
 
       const { password: _, passwordHash: __, ...userWithoutPassword } = user;
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'User created successfully',
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Error creating user:', error);
-      res.status(500).json({ error: 'Failed to create user' });
+      return res.status(500).json({ error: 'Failed to create user' });
     }
   }
 
-  static async updateUser(req: UpdateUserRequest, res: Response) {
+  static async updateUser(req: UpdateUserRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -229,17 +228,17 @@ export class UserController {
       const updatedUser = await UserModel.findById(userId);
       const { passwordHash, ...userWithoutPassword } = updatedUser!;
 
-      res.json({
+      return res.json({
         message: 'User updated successfully',
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Error updating user:', error);
-      res.status(500).json({ error: 'Failed to update user' });
+      return res.status(500).json({ error: 'Failed to update user' });
     }
   }
 
-  static async deleteUser(req: UserParamsRequest, res: Response) {
+  static async deleteUser(req: UserParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -300,7 +299,7 @@ export class UserController {
         });
       });
 
-      res.json({ 
+      return res.json({ 
         message: `User deleted successfully. Also deleted ${userKeys.length} VPN keys.`,
         deletedUser: {
           id: user.id,
@@ -311,11 +310,11 @@ export class UserController {
       });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ error: 'Failed to delete user' });
+      return res.status(500).json({ error: 'Failed to delete user' });
     }
   }
 
-  static async getUserStats(req: AuthenticatedRequest, res: Response) {
+  static async getUserStats(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -339,7 +338,7 @@ export class UserController {
         return acc;
       }, {});
 
-      res.json({
+      return res.json({
         stats: {
           total: totalUsers,
           admins: adminUsers,
@@ -350,11 +349,11 @@ export class UserController {
       });
     } catch (error) {
       console.error('Error fetching user stats:', error);
-      res.status(500).json({ error: 'Failed to fetch user statistics' });
+      return res.status(500).json({ error: 'Failed to fetch user statistics' });
     }
   }
 
-  static async updateLanguage(req: AuthenticatedRequest, res: Response) {
+  static async updateLanguage(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -373,13 +372,13 @@ export class UserController {
       const updatedUser = await UserModel.findById(req.user.id);
       const { passwordHash, ...userWithoutPassword } = updatedUser!;
 
-      res.json({
+      return res.json({
         message: 'Language preference updated successfully',
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Error updating language preference:', error);
-      res.status(500).json({ error: 'Failed to update language preference' });
+      return res.status(500).json({ error: 'Failed to update language preference' });
     }
   }
 }

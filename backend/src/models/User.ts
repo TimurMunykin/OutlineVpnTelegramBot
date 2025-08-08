@@ -101,7 +101,7 @@ export class UserModel {
 
   static async updateUser(
     userId: number, 
-    updates: Partial<Pick<User, 'name' | 'email' | 'role' | 'hasWebAccess' | 'migrationStatus'>>
+    updates: Partial<Pick<User, 'name' | 'email' | 'role' | 'hasWebAccess' | 'migrationStatus' | 'preferredLanguage'>>
   ): Promise<User> {
     const user = await prisma.user.update({
       where: { id: userId },

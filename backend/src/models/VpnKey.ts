@@ -149,7 +149,7 @@ export class VpnKeyModel {
     })
 
     // Get user names for the grouped results
-    const userIds = byUser.map(item => item.userId)
+    const userIds = byUser.map(item => item.userId).filter((id): id is number => id !== null)
     const users = await prisma.user.findMany({
       where: {
         id: { in: userIds },
@@ -164,7 +164,7 @@ export class VpnKeyModel {
 
     const byUserWithNames = byUser.map(item => ({
       userId: item.userId,
-      userName: userMap.get(item.userId) || 'Unknown',
+      userName: item.userId ? (userMap.get(item.userId) || 'Unknown') : 'Unknown',
       count: item._count.id,
     }))
 

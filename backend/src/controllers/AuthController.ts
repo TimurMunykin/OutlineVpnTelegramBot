@@ -24,16 +24,9 @@ interface RefreshRequest extends Request {
   };
 }
 
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    role: string;
-  };
-}
 
 export class AuthController {
-  static async register(req: RegisterRequest, res: Response) {
+  static async register(req: RegisterRequest, res: Response): Promise<Response> {
     try {
       const { email, name, password } = req.body;
 
@@ -66,19 +59,19 @@ export class AuthController {
         isEmailVerified: false,
       });
 
-      const { password: _, passwordHash: __, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = user;
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'User registered successfully',
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async login(req: LoginRequest, res: Response) {
+  static async login(req: LoginRequest, res: Response): Promise<Response> {
     try {
       const { email, password } = req.body;
 
@@ -111,23 +104,23 @@ export class AuthController {
           email: user.email, 
           role: user.role 
         },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+        process.env.JWT_SECRET || '',
+        { expiresIn: process.env.JWT_EXPIRES_IN || '1h' } as jwt.SignOptions
       );
 
       const refreshToken = jwt.sign(
         { 
           id: user.id 
         },
-        process.env.JWT_REFRESH_SECRET!,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+        process.env.JWT_REFRESH_SECRET || '',
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' } as jwt.SignOptions
       );
 
       await UserModel.saveRefreshToken(user.id, refreshToken);
 
-      const { password: _, passwordHash: __, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = user;
 
-      res.json({
+      return res.json({
         message: 'Login successful',
         user: userWithoutPassword,
         token: accessToken,
@@ -135,11 +128,11 @@ export class AuthController {
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async refresh(req: RefreshRequest, res: Response) {
+  static async refresh(req: RefreshRequest, res: Response): Promise<Response> {
     try {
       const { refreshToken } = req.body;
 
@@ -147,7 +140,7 @@ export class AuthController {
         return res.status(400).json({ error: 'Refresh token is required' });
       }
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { id: number };
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || '') as { id: number };
       
       const isTokenValid = await UserModel.verifyRefreshToken(decoded.id, refreshToken);
       if (!isTokenValid) {
@@ -172,33 +165,33 @@ export class AuthController {
           email: user.email, 
           role: user.role 
         },
-        process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+        process.env.JWT_SECRET || '',
+        { expiresIn: process.env.JWT_EXPIRES_IN || '1h' } as jwt.SignOptions
       );
 
-      res.json({
+      return res.json({
         token: newAccessToken,
       });
     } catch (error) {
       console.error('Token refresh error:', error);
-      res.status(401).json({ error: 'Invalid refresh token' });
+      return res.status(401).json({ error: 'Invalid refresh token' });
     }
   }
 
-  static async logout(req: AuthenticatedRequest, res: Response) {
+  static async logout(req: Request, res: Response): Promise<Response> {
     try {
       if (req.user) {
         await UserModel.revokeRefreshTokens(req.user.id);
       }
 
-      res.json({ message: 'Logout successful' });
+      return res.json({ message: 'Logout successful' });
     } catch (error) {
       console.error('Logout error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async me(req: AuthenticatedRequest, res: Response) {
+  static async me(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -209,14 +202,14 @@ export class AuthController {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const { password: _, passwordHash: __, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = user;
 
-      res.json({
+      return res.json({
         user: userWithoutPassword,
       });
     } catch (error) {
       console.error('Get user error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 }

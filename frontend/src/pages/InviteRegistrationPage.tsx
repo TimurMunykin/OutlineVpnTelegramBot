@@ -253,7 +253,7 @@ const InviteRegistrationPage: React.FC = () => {
               </Typography>
             </Box>
             
-            <Box display="flex" alignItems="center" justify="space-between">
+            <Box display="flex" alignItems="center" justifyContent="space-between">
               <Typography variant="caption" color="text.secondary">
                 Expires: {new Date(inviteInfo.expiresAt).toLocaleDateString()}
               </Typography>

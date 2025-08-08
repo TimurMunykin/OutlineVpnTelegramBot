@@ -1,23 +1,22 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { vpnService } from '../services/vpnService';
 import { VpnKeyModel } from '../models/VpnKey';
 import { vpnSyncService } from '../services/VpnSyncService';
-import { AuthenticatedRequest } from '../middleware/auth';
 
-interface CreateKeyRequest extends AuthenticatedRequest {
+interface CreateKeyRequest extends Request {
   body: {
     name?: string;
     vpnClientId?: number; // For creating keys for VPN clients
   };
 }
 
-interface KeyParamsRequest extends AuthenticatedRequest {
+interface KeyParamsRequest extends Request {
   params: {
     id: string;
   };
 }
 
-interface UpdateKeyRequest extends AuthenticatedRequest {
+interface UpdateKeyRequest extends Request {
   params: {
     id: string;
   };
@@ -35,7 +34,7 @@ export class VpnController {
       console.warn('Sync failed, continuing with DB data:', syncError);
     }
   }
-  static async canCreateKey(req: AuthenticatedRequest, res: Response) {
+  static async canCreateKey(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -53,7 +52,7 @@ export class VpnController {
       const { UserLimitModel } = await import('../models/UserLimit');
       const limitCheck = await UserLimitModel.canUserCreateKey(req.user.id);
       
-      res.json({
+      return res.json({
         canCreate: limitCheck.canCreate,
         reason: limitCheck.reason,
         currentCount: limitCheck.currentCount,
@@ -61,11 +60,11 @@ export class VpnController {
       });
     } catch (error) {
       console.error('Error checking user limits:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async getUnassociatedKeys(req: AuthenticatedRequest, res: Response) {
+  static async getUnassociatedKeys(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -91,16 +90,16 @@ export class VpnController {
       // Фильтруем неассоциированные ключи (те, что есть на сервере, но не назначены пользователям)
       const unassociatedKeys = outlineKeys.filter(key => !assignedKeyIds.has(key.id));
 
-      res.json({
+      return res.json({
         keys: unassociatedKeys,
       });
     } catch (error) {
       console.error('Error fetching unassociated keys:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async getKeys(req: AuthenticatedRequest, res: Response) {
+  static async getKeys(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -144,16 +143,16 @@ export class VpnController {
         })
       );
 
-      res.json({
+      return res.json({
         keys: keysWithUserInfo,
       });
     } catch (error) {
       console.error('Error fetching VPN keys:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async createKey(req: CreateKeyRequest, res: Response) {
+  static async createKey(req: CreateKeyRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -202,23 +201,24 @@ export class VpnController {
       // Синхронизация после создания ключа, чтобы обновить состояние
       await VpnController.ensureSync();
 
-      res.status(201).json({
+      const dbKey = result.dbKey as any;
+      return res.status(201).json({
         message: 'VPN key created successfully',
         key: {
-          id: result.dbKey.id,
+          id: dbKey.id,
           outlineKeyId: result.id,
           accessUrl: result.accessUrl,
-          name: result.dbKey.name,
-          createdAt: result.dbKey.createdAt,
+          name: dbKey.name,
+          createdAt: dbKey.createdAt,
         },
       });
     } catch (error) {
       console.error('Error creating VPN key:', error);
-      res.status(500).json({ error: 'Failed to create VPN key' });
+      return res.status(500).json({ error: 'Failed to create VPN key' });
     }
   }
 
-  static async getKey(req: KeyParamsRequest, res: Response) {
+  static async getKey(req: KeyParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -240,7 +240,7 @@ export class VpnController {
       try {
         const outlineInfo = await vpnService.getKeyInfo(key.outlineKeyId);
         
-        res.json({
+        return res.json({
           key: {
             ...key,
             outlineInfo,
@@ -248,15 +248,15 @@ export class VpnController {
         });
       } catch (outlineError) {
         // If Outline server error, return DB info only
-        res.json({ key });
+        return res.json({ key });
       }
     } catch (error) {
       console.error('Error fetching VPN key:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  static async deleteKey(req: KeyParamsRequest, res: Response) {
+  static async deleteKey(req: KeyParamsRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -279,14 +279,14 @@ export class VpnController {
       // Синхронизация после удаления ключа
       await VpnController.ensureSync();
 
-      res.json({ message: 'VPN key deleted successfully' });
+      return res.json({ message: 'VPN key deleted successfully' });
     } catch (error) {
       console.error('Error deleting VPN key:', error);
-      res.status(500).json({ error: 'Failed to delete VPN key' });
+      return res.status(500).json({ error: 'Failed to delete VPN key' });
     }
   }
 
-  static async updateKey(req: UpdateKeyRequest, res: Response) {
+  static async updateKey(req: UpdateKeyRequest, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -316,18 +316,18 @@ export class VpnController {
       // Update name in database
       const updatedKey = await VpnKeyModel.updateName(keyId, name);
 
-      res.json({
+      return res.json({
         message: 'VPN key updated successfully',
         key: updatedKey,
       });
     } catch (error) {
       console.error('Error updating VPN key:', error);
-      res.status(500).json({ error: 'Failed to update VPN key' });
+      return res.status(500).json({ error: 'Failed to update VPN key' });
     }
   }
 
 
-  static async reassignKey(req: AuthenticatedRequest, res: Response) {
+  static async reassignKey(req: Request, res: Response): Promise<Response> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -346,14 +346,14 @@ export class VpnController {
 
       await vpnSyncService.reassignKey(outlineKeyId, parseInt(userId));
 
-      res.json({ message: 'Key reassigned successfully' });
+      return res.json({ message: 'Key reassigned successfully' });
     } catch (error) {
       console.error('Error reassigning key:', error);
-      res.status(500).json({ error: 'Failed to reassign key' });
+      return res.status(500).json({ error: 'Failed to reassign key' });
     }
   }
 
-  static async getKeysWithTraffic(req: AuthenticatedRequest, res: Response): Promise<void> {
+  static async getKeysWithTraffic(req: Request, res: Response): Promise<Response> {
     try {
       await VpnController.ensureSync();
 
@@ -384,16 +384,16 @@ export class VpnController {
         );
         
         const keysWithTraffic = await VpnController.enrichKeysWithTraffic(keysWithUserInfo);
-        res.json({ keys: keysWithTraffic });
+        return res.json({ keys: keysWithTraffic });
       } else {
         // Regular user can only see their own keys with traffic info
         const userKeys = await VpnKeyModel.findByUserId(req.user!.id);
         const keysWithTraffic = await VpnController.enrichKeysWithTraffic(userKeys);
-        res.json({ keys: keysWithTraffic });
+        return res.json({ keys: keysWithTraffic });
       }
     } catch (error) {
       console.error('Error fetching keys with traffic:', error);
-      res.status(500).json({ error: 'Failed to fetch keys with traffic' });
+      return res.status(500).json({ error: 'Failed to fetch keys with traffic' });
     }
   }
 
