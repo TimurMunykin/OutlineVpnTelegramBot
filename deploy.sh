@@ -37,9 +37,9 @@ echo "📁 Created required directories"
 
 # Build and start services
 echo "🔨 Building and starting services..."
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml build --no-cache
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml up -d
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
@@ -47,11 +47,11 @@ sleep 10
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-docker-compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
+docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
 
 # Seed initial data if needed
 echo "🌱 Seeding initial data..."
-docker-compose -f docker-compose.prod.yml exec app npx prisma db seed || echo "Seed already exists or failed - continuing..."
+docker compose -f docker-compose.prod.yml exec app npx prisma db seed || echo "Seed already exists or failed - continuing..."
 
 # Check service health
 echo "🏥 Checking service health..."
@@ -62,7 +62,7 @@ if curl -f http://localhost:3001/health >/dev/null 2>&1; then
     echo "✅ Backend service is healthy"
 else
     echo "❌ Backend service health check failed"
-    docker-compose -f docker-compose.prod.yml logs app
+    docker compose -f docker-compose.prod.yml logs app
     exit 1
 fi
 
@@ -71,7 +71,7 @@ if curl -f http://localhost/health >/dev/null 2>&1; then
     echo "✅ Frontend service is healthy"
 else
     echo "❌ Frontend service health check failed"
-    docker-compose -f docker-compose.prod.yml logs frontend
+    docker compose -f docker-compose.prod.yml logs frontend
     exit 1
 fi
 
@@ -83,9 +83,9 @@ echo "   Backend API: http://localhost:3001"
 echo "   API Docs: http://localhost:3001/api/docs"
 echo ""
 echo "📊 To monitor logs:"
-echo "   docker-compose -f docker-compose.prod.yml logs -f"
+echo "   docker compose -f docker-compose.prod.yml logs -f"
 echo ""
 echo "🛑 To stop services:"
-echo "   docker-compose -f docker-compose.prod.yml down"
+echo "   docker compose -f docker-compose.prod.yml down"
 echo ""
 echo "💾 Database backups are automatically created daily in ./backups/"
