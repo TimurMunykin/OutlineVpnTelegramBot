@@ -9,6 +9,7 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://vpnuser:${DB_PASSWORD}@db:5432/vpnmanager
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - OUTLINE_API_URL=${OUTLINE_API_URL}
       - OUTLINE_API_FINGERPRINT=${OUTLINE_API_FINGERPRINT}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
