@@ -98,17 +98,13 @@ export class AuthController {
         });
       }
 
-      console.log('JWT_SECRET in login:', JSON.stringify(process.env.JWT_SECRET));
-      const jwtSecret = process.env.JWT_SECRET || '';
-      console.log('jwtSecret to jwt.sign():', JSON.stringify(jwtSecret));
-      
       const accessToken = jwt.sign(
         { 
           id: user.id, 
           email: user.email, 
           role: user.role 
         },
-        jwtSecret,
+        process.env.JWT_SECRET || '',
         { expiresIn: process.env.JWT_EXPIRES_IN || '1h' } as jwt.SignOptions
       );
 
