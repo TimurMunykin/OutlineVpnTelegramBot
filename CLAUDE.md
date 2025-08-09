@@ -62,7 +62,7 @@ For quick UI development and testing with hot reload:
 # - Database at: localhost:5433
 
 # Login credentials:
-# Admin: admin@test.local / admin123  
+# Admin: admin@test.local / admin123
 # User: user@test.local / user123
 ```
 
@@ -93,6 +93,31 @@ npx prisma db seed
 npx prisma studio
 ```
 
+### CRITICAL: Agent-Based Workflow (HIGHEST PRIORITY)
+**ALL USER REQUESTS MUST GO THROUGH SPECIALIZED AGENTS - NEVER WORK DIRECTLY**
+
+1. **dev-team-coordinator** - ALWAYS USE FIRST for any user request
+   - Acts as team lead/manager for all development tasks
+   - Analyzes requirements and delegates to appropriate specialists
+   - Coordinates complex multi-step features and bug fixes
+   - Tracks project progress across all agents
+
+2. **Specialized Agents** (delegated by coordinator):
+   - **frontend-feature-developer**: New UI features, components, pages
+   - **frontend-bug-fixer**: UI bugs, styling issues, component fixes
+   - **typescript-backend-developer**: New API endpoints, backend features
+   - **backend-bug-hunter**: Backend bugs, API issues, server problems
+   - **frontend-test-writer**: Frontend unit/integration tests
+   - **backend-test-writer**: Backend API/service tests
+   - **cicd-docker-engineer**: Docker, CI/CD, deployment configuration
+
+3. **Workflow**:
+   ```
+   User Request → dev-team-coordinator → Specialist Agent(s) → Complete Task
+   ```
+
+**NEVER bypass this workflow - always start with dev-team-coordinator agent!**
+
 ### Important Notes for Claude Code
 - **ALWAYS use `./dev.sh dev` for development workflow** - this enables hot reload for frontend changes
 - **NEVER use full production builds for UI testing** - use dev environment for quick iterations
@@ -115,8 +140,8 @@ After pushing images to registry, on the production server:
 ```bash
 # Pull latest code and Docker images
 git pull origin master
-docker-compose pull
-docker-compose up -d
+docker compose -f docker-compose.server.yml pull
+docker compose -f docker-compose.server.yml up -d --force-recreate
 
 # Or use deployment script if available
 ./deploy.sh
@@ -125,7 +150,7 @@ docker-compose up -d
 ### Development Script Commands
 ```bash
 ./dev.sh build    # Build images locally
-./dev.sh up       # Start local development environment  
+./dev.sh up       # Start local development environment
 ./dev.sh logs     # Show logs (optionally specify service)
 ./dev.sh stop     # Stop local environment
 ./dev.sh clean    # Clean up all local data
