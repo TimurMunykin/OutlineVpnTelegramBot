@@ -11,6 +11,10 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - OUTLINE_API_URL=${OUTLINE_API_URL}
       - OUTLINE_API_FINGERPRINT=${OUTLINE_API_FINGERPRINT}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - USER_EMAIL=${USER_EMAIL}
+      - USER_PASSWORD=${USER_PASSWORD}
     depends_on:
       - db
     restart: unless-stopped
