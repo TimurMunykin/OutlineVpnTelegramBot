@@ -39,6 +39,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
+
 # Install production dependencies and rebuild native modules
 RUN npm ci --only=production && npm rebuild && npm cache clean --force
 
