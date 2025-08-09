@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  app:
+    image: 194.87.187.45:5000/vpn-bot-backend:latest
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vpnuser:${DB_PASSWORD}@db:5432/vpnmanager
+      - JWT_SECRET=${JWT_SECRET}
+      - OUTLINE_API_URL=${OUTLINE_API_URL}
+      - OUTLINE_API_FINGERPRINT=${OUTLINE_API_FINGERPRINT}
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  frontend:
+    image: 194.87.187.45:5000/vpn-bot-frontend:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: sh -c "while :; do sleep 12h & wait; certbot renew --webroot --webroot-path=/var/www/certbot; done"
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=vpnmanager
+      - POSTGRES_USER=vpnuser
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+  backup:
+    image: postgres:15-alpine
+    depends_on:
+      - db
+    volumes:
+      - ./backups:/backups
+    command: |
+      sh -c '
+      while true; do
+        PGPASSWORD=${DB_PASSWORD} pg_dump -h db -U vpnuser -d vpnmanager > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+        find /backups -name "backup_*.sql" -mtime +7 -delete
+        sleep 86400
+      done'
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

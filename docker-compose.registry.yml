@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: 194.87.187.45:5000/vpn-bot-backend:latest
+    
+  frontend:
+    build:
+      context: ./frontend  
+      dockerfile: Dockerfile.prod
+    image: 194.87.187.45:5000/vpn-bot-frontend:latest
