@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://yourdomain.com']
+    ? ['https://vpnconsoleoutline.tw1.ru']
     : ['http://localhost:3000'],
   credentials: true
 }));
@@ -55,8 +55,12 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
+        url: process.env.NODE_ENV === 'production'
+          ? 'https://vpnconsoleoutline.tw1.ru/api'
+          : `http://localhost:${PORT}/api`,
+        description: process.env.NODE_ENV === 'production' 
+          ? 'Production server'
+          : 'Development server',
       },
     ],
     components: {
