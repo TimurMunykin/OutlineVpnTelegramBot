@@ -98,9 +98,43 @@ npx prisma studio
 - **NEVER use full production builds for UI testing** - use dev environment for quick iterations
 - After making frontend changes, they will be automatically reflected at http://localhost:3000
 - Only use `./dev.sh test` when you need to test the full production build
+- **Git operations (add, commit, push) are handled by the user** - Claude should not perform git commands
 
 ## Production Deployment
 
+### Local to Registry Deployment
+```bash
+# Build and push images to Docker registry
+./dev.sh deploy
+# This builds production images and pushes them to the configured registry
+# Uses docker-compose.registry.yml for registry configuration
+```
+
+### Server Deployment (after registry push)
+After pushing images to registry, on the production server:
+```bash
+# Pull latest code and Docker images
+git pull origin master
+docker-compose pull
+docker-compose up -d
+
+# Or use deployment script if available
+./deploy.sh
+```
+
+### Development Script Commands
+```bash
+./dev.sh build    # Build images locally
+./dev.sh up       # Start local development environment  
+./dev.sh logs     # Show logs (optionally specify service)
+./dev.sh stop     # Stop local environment
+./dev.sh clean    # Clean up all local data
+./dev.sh seed     # Seed database with test users
+./dev.sh test     # Test locally before deploying
+./dev.sh deploy   # Build and push to production registry
+```
+
+### Manual Production Deployment
 ```bash
 # Copy and configure environment
 cp .env.production .env
