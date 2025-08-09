@@ -30,13 +30,13 @@ services:
       - app
     restart: unless-stopped
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./nginx/ssl:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: sh -c "while :; do sleep 12h & wait; certbot renew --webroot --webroot-path=/var/www/certbot; done"
-    restart: unless-stopped
+  # certbot:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - ./nginx/ssl:/etc/letsencrypt
+  #     - ./certbot/www:/var/www/certbot
+  #   command: sh -c "while :; do sleep 12h & wait; certbot renew --webroot --webroot-path=/var/www/certbot; done"
+  #   restart: unless-stopped
 
   db:
     image: postgres:15-alpine
