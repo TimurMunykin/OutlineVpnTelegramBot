@@ -49,13 +49,40 @@ The application requires these environment variables in a `.env` file:
 
 ## Development Commands
 
+### Development Workflow
+For quick UI development and testing with hot reload:
 ```bash
-# Backend development
+# Start development environment (recommended for UI changes)
+./dev.sh dev
+# This starts:
+# - Backend and database in Docker containers
+# - Frontend with Vite dev server (hot reload) in Docker
+# - Frontend available at: http://localhost:3000
+# - Backend API at: http://localhost:3001/api
+# - Database at: localhost:5433
+
+# Login credentials:
+# Admin: admin@test.local / admin123  
+# User: user@test.local / user123
+```
+
+### Production Testing
+For full production builds:
+```bash
+# Full production build and test
+./dev.sh test
+# - Builds all services with production Dockerfiles
+# - Available at: http://localhost:8080
+```
+
+### Manual Development
+```bash
+# Backend development (manual)
 cd backend
 npm install
 npm run dev
 
-# Frontend development  
+# Frontend development (manual)
 cd frontend
 npm install
 npm run dev
@@ -65,6 +92,12 @@ npx prisma migrate dev
 npx prisma db seed
 npx prisma studio
 ```
+
+### Important Notes for Claude Code
+- **ALWAYS use `./dev.sh dev` for development workflow** - this enables hot reload for frontend changes
+- **NEVER use full production builds for UI testing** - use dev environment for quick iterations
+- After making frontend changes, they will be automatically reflected at http://localhost:3000
+- Only use `./dev.sh test` when you need to test the full production build
 
 ## Production Deployment
 

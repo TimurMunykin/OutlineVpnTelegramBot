@@ -119,7 +119,7 @@ export const BalanceManagementForm: React.FC<BalanceManagementFormProps> = ({
           </Tabs>
         </Box>
         
-        <Grid container spacing={3} alignItems="end">
+        <Grid container spacing={3} alignItems="flex-start">
           <Grid item xs={12} md={3}>
             <FormControl fullWidth>
               <InputLabel>User</InputLabel>
@@ -135,11 +135,9 @@ export const BalanceManagementForm: React.FC<BalanceManagementFormProps> = ({
                 ))}
               </Select>
             </FormControl>
-            {selectedUserData && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                Current balance: {selectedUserData.balance} points
-              </Typography>
-            )}
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', minHeight: '1.2em' }}>
+              {selectedUserData ? `Current balance: ${selectedUserData.balance} points` : ' '}
+            </Typography>
           </Grid>
           
           <Grid item xs={12} md={3}>
@@ -163,6 +161,7 @@ export const BalanceManagementForm: React.FC<BalanceManagementFormProps> = ({
               label="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              helperText=" "
             />
           </Grid>
           
@@ -174,9 +173,13 @@ export const BalanceManagementForm: React.FC<BalanceManagementFormProps> = ({
               startIcon={buttonConfig.icon}
               onClick={handleSubmit}
               disabled={buttonConfig.disabled}
+              sx={{ height: '56px' }}
             >
               {buttonConfig.label}
             </Button>
+            <Typography variant="caption" sx={{ mt: 0.5, display: 'block', minHeight: '1.2em' }}>
+              {' '}
+            </Typography>
           </Grid>
         </Grid>
 

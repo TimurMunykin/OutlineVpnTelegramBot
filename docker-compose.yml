@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vpnuser:testpass@db:5432/vpnmanager
+      - JWT_SECRET=test_jwt_secret_key_for_local
+      - JWT_REFRESH_SECRET=test_jwt_refresh_secret_key_for_local
+      - OUTLINE_API_URL=http://test:1234/api
+      - OUTLINE_API_FINGERPRINT=test_fingerprint
+      - ADMIN_EMAIL=admin@test.local
+      - ADMIN_PASSWORD=admin123
+      - USER_EMAIL=user@test.local
+      - USER_PASSWORD=user123
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx-local.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=vpnmanager
+      - POSTGRES_USER=vpnuser
+      - POSTGRES_PASSWORD=testpass
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+
+volumes:
+  postgres_data_local:
