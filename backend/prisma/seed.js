@@ -1,59 +1,40 @@
 const { PrismaClient } = require('@prisma/client')
 const bcrypt = require('bcrypt')
-const readline = require('readline')
-const crypto = require('crypto')
 
 const prisma = new PrismaClient()
-
-function askQuestion(query) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-
-  return new Promise(resolve => rl.question(query, ans => {
-    rl.close()
-    resolve(ans)
-  }))
-}
 
 async function main() {
   console.log('🔄 Seeding database...')
   console.log('')
 
-  // Get admin credentials
-  const adminEmail = await askQuestion('Admin email (default: admin@example.com): ')
-  const finalAdminEmail = adminEmail.trim() || 'admin@example.com'
-  
-  const adminPassword = await askQuestion('Admin password (leave empty to generate random): ')
-  let finalAdminPassword
-  
-  if (adminPassword.trim()) {
-    finalAdminPassword = adminPassword.trim()
-    console.log('✅ Using provided admin password')
-  } else {
-    finalAdminPassword = crypto.randomBytes(6).toString('hex')
-    console.log('🔑 Generated admin password:', finalAdminPassword)
-    console.log('⚠️  SAVE THIS PASSWORD!')
+  // Check required environment variables
+  const requiredEnvVars = ['ADMIN_EMAIL', 'ADMIN_PASSWORD', 'USER_EMAIL', 'USER_PASSWORD']
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
+
+  if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:')
+    missingVars.forEach(varName => {
+      console.error(`   - ${varName}`)
+    })
+    console.error('')
+    console.error('💡 Please set these variables in your .env file:')
+    console.error('   ADMIN_EMAIL=admin@yourdomain.com')
+    console.error('   ADMIN_PASSWORD=your_secure_password')
+    console.error('   USER_EMAIL=user@yourdomain.com')
+    console.error('   USER_PASSWORD=user_secure_password')
+    console.error('')
+    process.exit(1)
   }
 
-  console.log('')
+  // Get credentials from environment
+  const finalAdminEmail = process.env.ADMIN_EMAIL
+  const finalUserEmail = process.env.USER_EMAIL
+  const finalAdminPassword = process.env.ADMIN_PASSWORD
+  const finalUserPassword = process.env.USER_PASSWORD
 
-  // Get test user credentials
-  const userEmail = await askQuestion('Test user email (default: user@example.com): ')
-  const finalUserEmail = userEmail.trim() || 'user@example.com'
-  
-  const userPassword = await askQuestion('Test user password (leave empty to generate random): ')
-  let finalUserPassword
-  
-  if (userPassword.trim()) {
-    finalUserPassword = userPassword.trim()
-    console.log('✅ Using provided test user password')
-  } else {
-    finalUserPassword = crypto.randomBytes(6).toString('hex')
-    console.log('🔑 Generated test user password:', finalUserPassword)
-    console.log('⚠️  SAVE THIS PASSWORD!')
-  }
+  console.log('📋 Using credentials:')
+  console.log(`   Admin: ${finalAdminEmail}`)
+  console.log(`   User: ${finalUserEmail}`)
 
   console.log('')
   console.log('Creating users...')
