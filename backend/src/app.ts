@@ -93,6 +93,13 @@ const swaggerOptions = {
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
+
+// Serve JSON spec
+app.get('/api/docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
+
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Health check
