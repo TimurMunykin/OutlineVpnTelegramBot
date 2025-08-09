@@ -98,6 +98,7 @@ export class AuthController {
         });
       }
 
+      console.log('JWT_SECRET in login:', JSON.stringify(process.env.JWT_SECRET));
       const accessToken = jwt.sign(
         { 
           id: user.id, 
