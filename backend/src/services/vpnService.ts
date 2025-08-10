@@ -1,0 +1,145 @@
+import { OutlineVPN, AccessKey, Server, DataUsagePerAccessKey } from 'outlinevpn-api'
+import { VpnKeyModel } from '../models/VpnKey'
+
+class VpnService {
+  private outlineVpn: OutlineVPN;
+
+  constructor() {
+    const apiUrl = process.env.OUTLINE_API_URL;
+    const fingerprint = process.env.OUTLINE_API_FINGERPRINT;
+
+    if (!apiUrl || !fingerprint) {
+      throw new Error('OUTLINE_API_URL and OUTLINE_API_FINGERPRINT must be set');
+    }
+
+    this.outlineVpn = new OutlineVPN({
+      apiUrl,
+      fingerprint,
+    });
+  }
+
+  async createVpnKey(userId?: number, vpnClientId?: number, name?: string): Promise<{ id: string; accessUrl: string; dbKey: any }> {
+    try {
+      const key = await this.outlineVpn.createAccessKey({ name })
+      
+      // Name is set during creation in v3
+
+      // Save to database
+      const dbKey = await VpnKeyModel.create({
+        userId,
+        vpnClientId,
+        outlineKeyId: key.id,
+        accessUrl: key.accessUrl,
+        name,
+      })
+
+      return {
+        id: key.id,
+        accessUrl: key.accessUrl,
+        dbKey,
+      }
+    } catch (error) {
+      console.error('Error creating VPN key:', error)
+      throw new Error('Could not create VPN key')
+    }
+  }
+
+  async listVpnKeys(): Promise<Array<{ id: string; name?: string; accessUrl: string }>> {
+    try {
+      const response = await this.outlineVpn.getAccessKeys();
+      // In API v3, response has structure { accessKeys: [...] }
+      const keys: AccessKey[] = (response as any).accessKeys || [];
+      
+      return keys.map((key: AccessKey) => ({
+        id: key.id,
+        name: key.name,
+        accessUrl: key.accessUrl
+      }));
+    } catch (error) {
+      console.error('Error listing VPN keys:', error);
+      throw new Error('Could not list VPN keys');
+    }
+  }
+
+  async removeVpnKey(keyId: string): Promise<void> {
+    try {
+      // Delete from Outline VPN server
+      await this.outlineVpn.deleteAccessKey(keyId)
+      
+      // Delete from database
+      await VpnKeyModel.deleteByOutlineKeyId(keyId)
+    } catch (error) {
+      console.error(`Error removing VPN key ${keyId}:`, error)
+      throw new Error(`Could not remove VPN key ${keyId}`)
+    }
+  }
+
+  async getKeyInfo(keyId: string): Promise<AccessKey> {
+    try {
+      const keyInfo = await this.outlineVpn.getAccessKey(keyId);
+      return keyInfo;
+    } catch (error) {
+      console.error(`Error fetching info for VPN key ${keyId}:`, error);
+      throw new Error(`Could not fetch info for VPN key ${keyId}`);
+    }
+  }
+
+  async renameKey(keyId: string, name: string): Promise<void> {
+    try {
+      await this.outlineVpn.renameAccessKey(keyId, name);
+    } catch (error) {
+      console.error(`Error renaming VPN key ${keyId}:`, error);
+      throw new Error(`Could not rename VPN key ${keyId}`);
+    }
+  }
+
+  async getServerInfo(): Promise<Server> {
+    try {
+      const info = await this.outlineVpn.getServer()
+      return info
+    } catch (error) {
+      console.error('Error getting server info:', error)
+      throw new Error('Could not get server info')
+    }
+  }
+
+  async getTrafficStats(): Promise<DataUsagePerAccessKey> {
+    try {
+      const stats = await this.outlineVpn.getDataUsage()
+      return stats
+    } catch (error) {
+      console.error('Error getting traffic stats:', error)
+      throw new Error('Could not get traffic stats')
+    }
+  }
+
+  async getKeyDataLimit(keyId: string): Promise<number | null> {
+    try {
+      const keyInfo = await this.getKeyInfo(keyId)
+      return (keyInfo as any).dataLimit?.bytes || (keyInfo as any).limit?.bytes || null
+    } catch (error) {
+      console.error(`Error getting data limit for key ${keyId}:`, error)
+      return null
+    }
+  }
+
+  async setKeyDataLimit(keyId: string, limitBytes: number): Promise<void> {
+    try {
+      await this.outlineVpn.addDataLimit(keyId, limitBytes)
+    } catch (error) {
+      console.error(`Error setting data limit for key ${keyId}:`, error)
+      throw error
+    }
+  }
+
+  async deleteKeyDataLimit(keyId: string): Promise<void> {
+    try {
+      await this.outlineVpn.deleteDataLimit(keyId)
+    } catch (error) {
+      console.error(`Error deleting data limit for key ${keyId}:`, error)
+      throw error
+    }
+  }
+}
+
+export const vpnService = new VpnService();
